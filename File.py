@@ -6,6 +6,7 @@ class File:
 
     def __init__(self, path=None):
         self.path = path
+        file = 
 
     @property
     def path(self):
@@ -19,7 +20,7 @@ class File:
         self._path = new_path
 
 
-class TxtFile(File):
+class txtFile(File):
     allowed_extension = ".txt"
 
     def __init__(self, path):
@@ -37,10 +38,7 @@ class TxtFile(File):
         except FileNotFoundError:
             raise FileNotFoundError(f"The file at '{self.path}' was not found.")
             
-    def sequence_extract(self) -> list:
-        if self.text:
-            return list(self.text)
-        return []
+    
 
 
 class MidiFile(File):
