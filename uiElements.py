@@ -1,16 +1,44 @@
 import pygame
+from abc import ABC, abstractmethod
 
 # CONSTANTES
 TEXTBOX_GAP = 10
 
 
-class Button:
+@abstractmethod
+class uiElements(ABC):
+    def __init__(self, x, y, font):
+        self.visible = False
+        self.x = x
+        self.y = y
+        self.font = font
+
+    @abstractmethod
+    def draw(self, surface):
+        pass
+
+
+class Text(uiElements):
+    def __init__(self, x, y, text, font):
+        super().__init__(x, y, font)
+        self.text = text
+
+    def draw(self, surface):
+        if not self.visible:
+            return
+
+        half_width = surface.get_width() // 2
+        text_surf = self.font.render(self.text, True, (255, 255, 255))
+        text_rect = text_surf.get_rect(midtop=(half_width, self.y))
+        surface.blit(text_surf, text_rect)
+
+
+class Button(uiElements):
     def __init__(self, x, y, width, height, text, font, action_triggered):
+        super().__init__(x, y, font)
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
-        self.font = font
         self.action_triggered = action_triggered
-        self.visible = False
 
     def handle_event(self, event):
         if not self.visible:
@@ -32,13 +60,12 @@ class Button:
         surface.blit(text_surf, text_rect)
 
 
-class textBox_UI:
-    def __init__(self, x, y, width, height, text, font):
+class textBox_UI(uiElements):
+    def __init__(self, x, y, width, height, font):
+        super().__init__(x, y, font)
         self.rect = pygame.Rect(x, y, width, height)
         self.text = ""
-        self.font = font
         self.active = False
-        self.visible = False
 
     def handle_event(self, event):
         if not self.visible:
@@ -46,7 +73,7 @@ class textBox_UI:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.active = self.rect.collidepoint(event.pos)
-        elif event.type == pygame.KEYDOWN and self.active:
+        elif event.type == (pygame.KEYDOWN or pygame.ISDOWN) and self.active:
             if event.key == pygame.K_BACKSPACE:
                 self.text = self.text[:-1]
             else:
@@ -60,4 +87,4 @@ class textBox_UI:
         pygame.draw.rect(surface, color, self.rect, 2, border_radius=5)
 
         text_surf = self.font.render(self.text, True, (255, 255, 255))
-        surface.blit(text_surf, self.rect.x + TEXTBOX_GAP, self.rect.y + TEXTBOX_GAP)
+        surface.blit(text_surf, (self.rect.x + TEXTBOX_GAP, self.rect.y + TEXTBOX_GAP))

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import pygame
-from uiElements import Button, textBox_UI
+from uiElements import Button, Text, textBox_UI
 
 
 class screenState(ABC):
@@ -41,24 +41,16 @@ class startScreen(screenState):
 
         self.elements = {
             # DEFINIR OS BUTTONS
-            "btn_play": Button(
-                300,
-                200,
-                200,
-                50,
-                "Tocar",
-                font,
-                lambda: self.manager.change_state("play"),
-            ),
             "btn_edit": Button(
                 300,
-                280,
+                200,
                 200,
                 50,
-                "Editar",
+                "Começar",
                 font,
                 lambda: self.manager.change_state("edit"),
             ),
+            "title": Text(300, 160, "Txt2Midi", font),
         }
 
     def enter(self):
@@ -81,15 +73,26 @@ class editScreen(screenState):
 
         self.elements = {
             # DEFINIR OS BUTTONS
+            # "title":
             "btn_back": Button(
-                300,
-                400,
+                575,
+                525,
                 200,
                 50,
-                "Voltar",
+                "Play",
+                font,
+                lambda: self.manager.change_state("play"),
+            ),
+            "txt_input": textBox_UI(50, 50, 400, 400, font),
+            "btn_home": Button(
+                350,
+                525,
+                200,
+                50,
+                "Inicio",
                 font,
                 lambda: self.manager.change_state("start"),
-            )
+            ),
         }
 
     def enter(self):
@@ -116,14 +119,23 @@ class playScreen(screenState):
         self.elements = {
             # DEFINIR OS BUTTONS
             "btn_back": Button(
-                300,
-                400,
+                575,
+                525,
                 200,
                 50,
                 "Voltar",
                 font,
+                lambda: self.manager.change_state("edit"),
+            ),
+            "btn_home": Button(
+                350,
+                525,
+                200,
+                50,
+                "Inicio",
+                font,
                 lambda: self.manager.change_state("start"),
-            )
+            ),
         }
 
     def enter(self):

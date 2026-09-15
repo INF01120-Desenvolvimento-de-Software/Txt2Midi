@@ -4,6 +4,7 @@ import screenManager
 
 def main():
     pygame.init()
+    pygame.key.set_repeat(400, 50)
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Txt2Midi")
     clock = pygame.time.Clock()
