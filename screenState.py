@@ -41,7 +41,7 @@ class startScreen(screenState):
 
         self.elements = {
             # DEFINIR OS BUTTONS
-            "btn_edit": Button(
+            "btn_start": Button(
                 300,
                 200,
                 200,
