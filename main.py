@@ -10,7 +10,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 32)
 
-    manager = screenManager.screenManager(font)
+    manager = screenManager.screenManager()
 
     manager.change_state("start")
 
@@ -22,7 +22,6 @@ def main():
 
             manager.handle_event(event)
 
-        manager.update()
         manager.draw(screen)
 
         pygame.display.flip()

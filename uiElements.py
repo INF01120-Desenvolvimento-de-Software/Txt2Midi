@@ -7,11 +7,11 @@ TEXTBOX_GAP = 10
 
 @abstractmethod
 class uiElements(ABC):
-    def __init__(self, x, y, font):
+    def __init__(self, x, y, size):
         self.visible = False
         self.x = x
         self.y = y
-        self.font = font
+        self.font = pygame.font.SysFont(None, size)
 
     @abstractmethod
     def draw(self, surface):
@@ -19,8 +19,8 @@ class uiElements(ABC):
 
 
 class Text(uiElements):
-    def __init__(self, x, y, text, font):
-        super().__init__(x, y, font)
+    def __init__(self, x, y, text, size):
+        super().__init__(x, y, size)
         self.text = text
 
     def draw(self, surface):
@@ -34,8 +34,8 @@ class Text(uiElements):
 
 
 class Button(uiElements):
-    def __init__(self, x, y, width, height, text, font, action_triggered):
-        super().__init__(x, y, font)
+    def __init__(self, x, y, width, height, text, size, action_triggered):
+        super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self.action_triggered = action_triggered
@@ -61,8 +61,8 @@ class Button(uiElements):
 
 
 class textBox_UI(uiElements):
-    def __init__(self, x, y, width, height, font):
-        super().__init__(x, y, font)
+    def __init__(self, x, y, width, height, size):
+        super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)
         self.text = ""
         self.linhas = []
@@ -92,7 +92,7 @@ class textBox_UI(uiElements):
                 lines[-1] = broke_line
                 self.text = "\n".join(lines)
 
-    def draw(self, surface):  # TRATAR DO CASO DE QUEBRA DE LINHA
+    def draw(self, surface):
         if not self.visible:
             return
 

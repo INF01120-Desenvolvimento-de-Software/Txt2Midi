@@ -3,11 +3,11 @@ from screenState import startScreen, editScreen, playScreen
 
 
 class screenManager:
-    def __init__(self, font):
+    def __init__(self):
         self.states = {
-            "start": startScreen(self, font),
-            "edit": editScreen(self, font),
-            "play": playScreen(self, font),
+            "start": startScreen(self),
+            "edit": editScreen(self),
+            "play": playScreen(self),
         }
         self.current_state = None
 
@@ -25,10 +25,6 @@ class screenManager:
     def handle_event(self, event: pygame.event.Event):
         if self.current_state is not None:
             self.current_state.handle_event(event)
-
-    def update(self):
-        if self.current_state is not None:
-            self.current_state.update()
 
     def draw(self, surface: pygame.Surface):
         if self.current_state is not None:
