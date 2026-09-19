@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import pygame
 from uiElements import Button, Text, textBox_UI
-
+from fileController import fileController
 
 class screenState(ABC):
     def __init__(self, manager):
@@ -86,6 +86,25 @@ class editScreen(screenState):
                 36,
                 lambda: self.manager.change_state("start"),
             ),
+            "btn_save_txt": Button(
+                50,
+                25,
+                100,
+                25,
+                "Save TXT file",
+                18,
+                lambda: self.manager.change_state("start"),
+
+            ),
+            "btn_import_txt": Button(
+                175,
+                25,
+                100,
+                25,
+                "Import TXT file",
+                18,
+                lambda: self.import_txt_action(),
+            ),
         }
 
     def enter(self):
@@ -100,6 +119,12 @@ class editScreen(screenState):
     def draw(self, surface: pygame.Surface):
         surface.fill((40, 50, 40))
         super().draw(surface)
+
+    def import_txt_action(self):
+        content = fileController.get_txt_content()
+        
+        if content is not None:
+            self.elements["txt_input"].text = content
 
 
 class playScreen(screenState):
