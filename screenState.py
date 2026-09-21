@@ -3,6 +3,7 @@ import pygame
 from uiElements import Button, Text, textBox_UI
 from fileController import fileController
 
+
 class screenState(ABC):
     def __init__(self, manager):
         self.elements = {}
@@ -94,7 +95,6 @@ class editScreen(screenState):
                 "Save TXT file",
                 18,
                 lambda: self.manager.change_state("start"),
-
             ),
             "btn_import_txt": Button(
                 175,
@@ -122,9 +122,9 @@ class editScreen(screenState):
 
     def import_txt_action(self):
         content = fileController.get_txt_content()
-        
+
         if content is not None:
-            self.elements["txt_input"].text = content
+            self.elements["txt_input"].set_text(content)
 
 
 class playScreen(screenState):

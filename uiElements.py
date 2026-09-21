@@ -130,6 +130,20 @@ class textBox_UI(UIElements):
         self.active = False
         self.cursor_pos = 0
 
+    def set_text(self, imported_text):
+        self.text = ""
+        self.cursor_pos = 0
+
+        for char in imported_text:
+            old_text = self.text
+            old_cursor_pos = self.cursor_pos
+
+            self.text += char
+            self.cursor_pos += 1
+
+            self._apply_word_wrap()
+            self._enforce_height_limit(old_text, old_cursor_pos)
+
     def handle_event(self, event):
         if not self.visible:
             return
@@ -143,8 +157,12 @@ class textBox_UI(UIElements):
         if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
             self._handle_navigation(event.key)
         else:
+            old_text = self.text
+            old_cursor_pos = self.cursor_pos
+
             self._handle_typing(event)
             self._apply_word_wrap()
+            self._enforce_height_limit(old_text, old_cursor_pos)
 
     def _handle_navigation(self, key):
         if key == pygame.K_LEFT:
@@ -200,6 +218,15 @@ class textBox_UI(UIElements):
 
             lines[current_line_idx] = broken_line
             self.text = "\n".join(lines)
+
+    def _enforce_height_limit(self, old_text, old_cursor_pos):
+        available_height = self.rect.height - (2 * TEXTBOX_GAP)
+        max_lines = available_height // self.font.get_height()
+        current_lines = len(self.text.split("\n"))
+
+        if current_lines > max_lines:
+            self.text = old_text
+            self.cursor_pos = old_cursor_pos
 
     def draw(self, surface):
         if not self.visible:
