@@ -1,16 +1,12 @@
 from abc import ABC, abstractmethod
 import pygame
 from uiElements import Button, Text, textBox_UI
-
+from fileController import fileController
 
 class screenState(ABC):
     def __init__(self, manager):
         self.elements = {}
         self.manager = manager
-
-    def update(self):
-        """Método padrão de atualização. Pode ser sobrescrito nas telas filhas."""
-        pass
 
     @abstractmethod
     def enter(self):
@@ -36,21 +32,20 @@ class screenState(ABC):
 
 
 class startScreen(screenState):
-    def __init__(self, manager, font):
+    def __init__(self, manager):
         super().__init__(manager)
 
         self.elements = {
-            # DEFINIR OS BUTTONS
-            "btn_edit": Button(
+            "btn_start": Button(
                 300,
                 200,
                 200,
                 50,
                 "Começar",
-                font,
+                36,
                 lambda: self.manager.change_state("edit"),
             ),
-            "title": Text(300, 160, "Txt2Midi", font),
+            "title": Text(300, 160, "Txt2Midi", 60),
         }
 
     def enter(self):
@@ -68,30 +63,47 @@ class startScreen(screenState):
 
 
 class editScreen(screenState):
-    def __init__(self, manager, font):
+    def __init__(self, manager):
         super().__init__(manager)
 
         self.elements = {
-            # DEFINIR OS BUTTONS
-            # "title":
             "btn_back": Button(
                 575,
                 525,
                 200,
                 50,
                 "Play",
-                font,
+                36,
                 lambda: self.manager.change_state("play"),
             ),
-            "txt_input": textBox_UI(50, 50, 400, 400, font),
+            "txt_input": textBox_UI(50, 50, 400, 400, 24),
             "btn_home": Button(
                 350,
                 525,
                 200,
                 50,
                 "Inicio",
-                font,
+                36,
                 lambda: self.manager.change_state("start"),
+            ),
+            "btn_save_txt": Button(
+                50,
+                25,
+                100,
+                25,
+                "Save TXT file",
+                18,
+                lambda: self.manager.change_state("start"),
+
+            ),
+            "btn_import_txt": Button(
+                175,
+                25,
+                100,
+                25,
+                "Import TXT file",
+                18,
+                lambda: self.import_txt_action(),
             ),
         }
 
@@ -104,16 +116,19 @@ class editScreen(screenState):
     def handle_event(self, event):
         super().handle_event(event)
 
-    def update(self):
-        pass
-
     def draw(self, surface: pygame.Surface):
         surface.fill((40, 50, 40))
         super().draw(surface)
 
+    def import_txt_action(self):
+        content = fileController.get_txt_content()
+        
+        if content is not None:
+            self.elements["txt_input"].text = content
+
 
 class playScreen(screenState):
-    def __init__(self, manager, font):
+    def __init__(self, manager):
         super().__init__(manager)
 
         self.elements = {
@@ -124,7 +139,7 @@ class playScreen(screenState):
                 200,
                 50,
                 "Voltar",
-                font,
+                36,
                 lambda: self.manager.change_state("edit"),
             ),
             "btn_home": Button(
@@ -133,7 +148,7 @@ class playScreen(screenState):
                 200,
                 50,
                 "Inicio",
-                font,
+                36,
                 lambda: self.manager.change_state("start"),
             ),
         }
