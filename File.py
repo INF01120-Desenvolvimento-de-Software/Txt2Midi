@@ -24,7 +24,7 @@ class File:
         self._path = new_path
 
 
-class txtFile(File):
+class TxtFile(File):
     allowed_extension = ".txt"
 
     def __init__(self, path):

@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 import pygame
-from uiElements import Button, Text, textBox_UI
-from fileController import fileController
+from UiElements import Button, Text, TextBoxUI
+from FileController import FileController
 
 
-class screenState(ABC):
+class ScreenState(ABC):
     def __init__(self, manager):
         self.elements = {}
         self.manager = manager
@@ -32,7 +32,7 @@ class screenState(ABC):
                 item.draw(surface)
 
 
-class startScreen(screenState):
+class StartScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
 
@@ -63,7 +63,7 @@ class startScreen(screenState):
         super().draw(surface)
 
 
-class editScreen(screenState):
+class EditScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
 
@@ -77,7 +77,7 @@ class editScreen(screenState):
                 36,
                 lambda: self.manager.change_state("play"),
             ),
-            "txt_input": textBox_UI(50, 50, 400, 400, 24),
+            "txt_input": TextBoxUI(50, 50, 400, 400, 24),
             "btn_home": Button(
                 350,
                 525,
@@ -121,13 +121,13 @@ class editScreen(screenState):
         super().draw(surface)
 
     def import_txt_action(self):
-        content = fileController.get_txt_content()
+        content = FileController.get_txt_content()
 
         if content is not None:
             self.elements["txt_input"].set_text(content)
 
 
-class playScreen(screenState):
+class PlayScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
 
