@@ -1,5 +1,5 @@
 import pygame
-import ScreenManager
+from ui.ScreenManager import ScreenManager
 
 
 def main():
@@ -10,7 +10,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 32)
 
-    manager = ScreenManager.ScreenManager()
+    manager = ScreenManager()
 
     manager.change_state("start")
 

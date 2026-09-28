@@ -1,5 +1,5 @@
 import pygame
-from ScreenState import StartScreen, EditScreen, PlayScreen
+from .ScreenState import StartScreen, EditScreen, PlayScreen
 
 
 class ScreenManager:

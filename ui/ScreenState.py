@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import pygame
-from UiElements import Button, Text, TextBoxUI
-from FileController import FileController
+from .UiElements import Button, Text, TextBoxUI
+from storage.FileController import FileController
 
 
 class ScreenState(ABC):

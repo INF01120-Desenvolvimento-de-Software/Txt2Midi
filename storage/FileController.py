@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
-from File import TxtFile
+from .File import TxtFile
 
 
 class FileController:
