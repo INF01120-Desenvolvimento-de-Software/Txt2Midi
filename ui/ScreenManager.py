@@ -1,13 +1,13 @@
 import pygame
-from screenState import startScreen, editScreen, playScreen
+from .ScreenState import StartScreen, EditScreen, PlayScreen
 
 
-class screenManager:
+class ScreenManager:
     def __init__(self):
         self.states = {
-            "start": startScreen(self),
-            "edit": editScreen(self),
-            "play": playScreen(self),
+            "start": StartScreen(self),
+            "edit": EditScreen(self),
+            "play": PlayScreen(self),
         }
         self.current_state = None
 
