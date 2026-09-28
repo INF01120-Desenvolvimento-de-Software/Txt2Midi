@@ -1,5 +1,6 @@
 import os
-from midiutil import MIDIFile
+
+# Remova a importação do midiutil
 
 
 class File:
@@ -36,7 +37,6 @@ class TxtFile(File):
             raise ValueError("Path is not defined.")
 
         try:
-            # O with garante que o arquivo vai ser fechado quando o bloco terminar
             with open(self.path, "r", encoding="utf-8") as file:
                 return file.read()
         except FileNotFoundError:
@@ -48,17 +48,3 @@ class MidiFile(File):
 
     def __init__(self, path):
         super().__init__(path)
-        self.midi = MIDIFile(1)
-
-    def save_file(self, new_path=None) -> str:
-        if new_path:
-            self.path = new_path
-
-        if not self.path:
-            raise ValueError("Path is not defined.")
-
-        # O with garante que o arquivo vai ser fechado quando o bloco terminar
-        with open(self.path, "wb") as output_file:
-            self.midi.writeFile(output_file)
-
-        return self.path

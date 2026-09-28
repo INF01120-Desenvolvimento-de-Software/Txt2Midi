@@ -10,6 +10,7 @@ class ScreenManager:
             "play": PlayScreen(self),
         }
         self.current_state = None
+        self.shared_text = ""  # Adicione esta linha
 
     def change_state(self, state_name: str):
         if state_name not in self.states:
