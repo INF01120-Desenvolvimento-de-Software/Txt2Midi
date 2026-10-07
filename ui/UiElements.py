@@ -1,68 +1,6 @@
 import pygame
 from abc import ABC, abstractmethod
 
-# CONSTANTES
-TEXTBOX_GAP = 10
-
-
-@abstractmethod
-class uiElements(ABC):
-    def __init__(self, x, y, size):
-        self.visible = False
-        self.x = x
-        self.y = y
-        self.font = pygame.font.SysFont(None, size)
-
-    @abstractmethod
-    def draw(self, surface):
-        pass
-
-
-class Text(uiElements):
-    def __init__(self, x, y, text, size):
-        super().__init__(x, y, size)
-        self.text = text
-
-    def draw(self, surface):
-        if not self.visible:
-            return
-
-        half_width = surface.get_width() // 2
-        text_surf = self.font.render(self.text, True, (255, 255, 255))
-        text_rect = text_surf.get_rect(midtop=(half_width, self.y))
-        surface.blit(text_surf, text_rect)
-
-
-class Button(uiElements):
-    def __init__(self, x, y, width, height, text, size, action_triggered):
-        super().__init__(x, y, size)
-        self.rect = pygame.Rect(x, y, width, height)
-        self.text = text
-        self.action_triggered = action_triggered
-
-    def handle_event(self, event):
-        if not self.visible:
-            return
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.rect.collidepoint(event.pos):
-                self.action_triggered()
-
-    def draw(self, surface):
-        if not self.visible:
-            return
-
-        mouse_pos = pygame.mouse.get_pos()
-        color = (100, 100, 250) if self.rect.collidepoint(mouse_pos) else (70, 70, 200)
-
-        pygame.draw.rect(surface, color, self.rect, border_radius=8)
-        text_surf = self.font.render(self.text, True, (255, 255, 255))
-        text_rect = text_surf.get_rect(center=self.rect.center)
-        surface.blit(text_surf, text_rect)
-
-
-import pygame
-from abc import ABC, abstractmethod
-
 TEXTBOX_GAP = 10
 
 
@@ -121,7 +59,7 @@ class Button(UIElements):
         surface.blit(text_surf, text_rect)
 
 
-class textBox_UI(UIElements):
+class TextBoxUI(UIElements):
     def __init__(self, x, y, width, height, size):
         super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)

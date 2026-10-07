@@ -1,15 +1,16 @@
 import pygame
-from screenState import startScreen, editScreen, playScreen
+from .ScreenState import StartScreen, EditScreen, PlayScreen
 
 
-class screenManager:
+class ScreenManager:
     def __init__(self):
         self.states = {
-            "start": startScreen(self),
-            "edit": editScreen(self),
-            "play": playScreen(self),
+            "start": StartScreen(self),
+            "edit": EditScreen(self),
+            "play": PlayScreen(self),
         }
         self.current_state = None
+        self.shared_text = ""  # Adicione esta linha
 
     def change_state(self, state_name: str):
         if state_name not in self.states:

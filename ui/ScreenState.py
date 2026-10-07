@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 import pygame
-from uiElements import Button, Text, textBox_UI
-from fileController import fileController
+
+from midi_engine.MidiWriter import MidiWriter
+from .UiElements import Button, Text, TextBoxUI
+from storage.FileController import FileController
 
 
-class screenState(ABC):
+class ScreenState(ABC):
     def __init__(self, manager):
         self.elements = {}
         self.manager = manager
@@ -32,7 +34,7 @@ class screenState(ABC):
                 item.draw(surface)
 
 
-class startScreen(screenState):
+class StartScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
 
@@ -63,21 +65,21 @@ class startScreen(screenState):
         super().draw(surface)
 
 
-class editScreen(screenState):
+class EditScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
 
         self.elements = {
-            "btn_back": Button(
+            "btn_play": Button(
                 575,
                 525,
                 200,
                 50,
                 "Play",
                 36,
-                lambda: self.manager.change_state("play"),
+                lambda: self.go_to_play_screen(),
             ),
-            "txt_input": textBox_UI(50, 50, 400, 400, 24),
+            "txt_input": TextBoxUI(50, 50, 400, 400, 24),
             "btn_home": Button(
                 350,
                 525,
@@ -121,18 +123,20 @@ class editScreen(screenState):
         super().draw(surface)
 
     def import_txt_action(self):
-        content = fileController.get_txt_content()
+        content = FileController.get_txt_content()
 
         if content is not None:
             self.elements["txt_input"].set_text(content)
 
+    def go_to_play_screen(self):
+        self.manager.shared_text = self.elements["txt_input"].text
+        self.manager.change_state("play")
 
-class playScreen(screenState):
+
+class PlayScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
-
         self.elements = {
-            # DEFINIR OS BUTTONS
             "btn_back": Button(
                 575,
                 525,
@@ -151,7 +155,25 @@ class playScreen(screenState):
                 36,
                 lambda: self.manager.change_state("start"),
             ),
+            "btn_generate": Button(
+                300, 250, 200, 50, "Gerar MIDI", 36, lambda: self.generate_midi_action()
+            ),
+            "status_text": Text(400, 320, "Pronto", 32),
         }
+
+    def generate_midi_action(self):
+        text_to_convert = self.manager.shared_text
+        if not text_to_convert.strip():
+            self.elements["status_text"].text = "Texto vazio!"
+            return
+
+        try:
+            writer = MidiWriter()
+            writer.process_text(text_to_convert)
+            writer.save_midi("musica_gerada.mid")
+            self.elements["status_text"].text = "Arquivo Gerado!"
+        except Exception as e:
+            self.elements["status_text"].text = f"Erro: {e}"
 
     def enter(self):
         super().enter()
