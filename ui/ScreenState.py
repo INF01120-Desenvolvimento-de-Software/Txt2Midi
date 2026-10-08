@@ -3,7 +3,7 @@ import pygame
 
 from midi_engine.MidiWriter import MidiWriter
 from .UiElements import Button, Text, TextBoxUI
-from storage.FileController import FileController
+from storage.OSInterface import OSInterface
 
 
 class ScreenState(ABC):
@@ -96,7 +96,7 @@ class EditScreen(ScreenState):
                 25,
                 "Save TXT file",
                 18,
-                lambda: self.manager.change_state("start"),
+                lambda: self.save_txt_action(),
             ),
             "btn_import_txt": Button(
                 175,
@@ -122,8 +122,11 @@ class EditScreen(ScreenState):
         surface.fill((40, 50, 40))
         super().draw(surface)
 
+    def save_txt_action(self):
+        OSInterface.save_txt_content(self.elements["txt_input"].text)
+
     def import_txt_action(self):
-        content = FileController.get_txt_content()
+        content = OSInterface.get_txt_content()
 
         if content is not None:
             self.elements["txt_input"].set_text(content)
