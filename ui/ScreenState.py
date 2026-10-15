@@ -1,9 +1,26 @@
 from abc import ABC, abstractmethod
-import pygame
-
 from midi_engine.MidiWriter import MidiWriter
 from .UiElements import Button, Text, TextBoxUI
 from storage.OSInterface import OSInterface
+from audio.MidiPlayer import MidiPlayer
+from collections import namedtuple
+import pygame
+
+Position = namedtuple("position", ["x", "y"])
+Size = namedtuple("size", ["width", "height"])
+
+options_bar_pos = Position(50, 25)
+options_bar_gap = 105
+
+player_pos = Position(260, 380)
+player_gap = 85
+player_button_size = Size(80, 30)
+player_font_size = 25
+
+lower_bar_pos = Position(390, 525)
+lower_bar_gap = 190
+lower_bar_font_size = 34
+lower_bar_button_size = Size(180, 50)
 
 
 class ScreenState(ABC):
@@ -70,28 +87,32 @@ class EditScreen(ScreenState):
         super().__init__(manager)
 
         self.elements = {
-            "btn_play": Button(
-                575,
-                525,
-                200,
-                50,
-                "Play",
-                36,
-                lambda: self.go_to_play_screen(),
-            ),
             "txt_input": TextBoxUI(50, 50, 400, 400, 24),
             "btn_home": Button(
-                350,
-                525,
-                200,
-                50,
+                lower_bar_pos.x,
+                lower_bar_pos.y,
+                lower_bar_button_size.width,
+                lower_bar_button_size.height,
                 "Inicio",
-                36,
+                lower_bar_font_size,
                 lambda: self.manager.change_state("start"),
             ),
+            "btn_generate": Button(
+                lower_bar_pos.x + lower_bar_gap,
+                lower_bar_pos.y,
+                lower_bar_button_size.width,
+                lower_bar_button_size.height,
+                "Gerar",
+                lower_bar_font_size,
+                lambda: (
+                    self.go_to_play_screen(),
+                    self.generate_midi_action(),
+                    MidiPlayer.load_midi("musica_gerada.mid"),
+                ),
+            ),
             "btn_save_txt": Button(
-                50,
-                25,
+                options_bar_pos.x,
+                options_bar_pos.y,
                 100,
                 25,
                 "Save TXT file",
@@ -99,18 +120,34 @@ class EditScreen(ScreenState):
                 lambda: self.save_txt_action(),
             ),
             "btn_import_txt": Button(
-                175,
-                25,
+                options_bar_pos.x + options_bar_gap,
+                options_bar_pos.y,
                 100,
                 25,
                 "Import TXT file",
                 18,
                 lambda: self.import_txt_action(),
             ),
+            "status_text": Text(400, 320, "", 32),
         }
+
+    def generate_midi_action(self):
+        text_to_convert = self.manager.shared_text
+        if not text_to_convert.strip():
+            self.elements["status_text"].text = "Texto vazio!"
+            return
+
+        try:
+            writer = MidiWriter()
+            writer.process_text(text_to_convert)
+            writer.save_midi("musica_gerada.mid")
+            self.elements["status_text"].text = "Arquivo Gerado!"
+        except Exception as e:
+            self.elements["status_text"].text = f"Erro: {e}"
 
     def enter(self):
         super().enter()
+        self.elements["status_text"].text = ""
 
     def exit(self):
         super().exit()
@@ -140,43 +177,52 @@ class PlayScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager)
         self.elements = {
-            "btn_back": Button(
-                575,
-                525,
-                200,
-                50,
-                "Voltar",
-                36,
-                lambda: self.manager.change_state("edit"),
-            ),
             "btn_home": Button(
-                350,
-                525,
-                200,
-                50,
+                lower_bar_pos.x,
+                lower_bar_pos.y,
+                lower_bar_button_size.width,
+                lower_bar_button_size.height,
                 "Inicio",
-                36,
+                lower_bar_font_size,
                 lambda: self.manager.change_state("start"),
             ),
-            "btn_generate": Button(
-                300, 250, 200, 50, "Gerar MIDI", 36, lambda: self.generate_midi_action()
+            "btn_edit": Button(
+                lower_bar_pos.x + lower_bar_gap,
+                lower_bar_pos.y,
+                lower_bar_button_size.width,
+                lower_bar_button_size.height,
+                "Editar",
+                lower_bar_font_size,
+                lambda: self.manager.change_state("edit"),
             ),
-            "status_text": Text(400, 320, "Pronto", 32),
+            "btn_reset": Button(
+                player_pos.x,
+                player_pos.y,
+                player_button_size.width,
+                player_button_size.height,
+                "Reset",
+                player_font_size,
+                lambda: (MidiPlayer.reset_audio()),
+            ),
+            "btn_play": Button(
+                player_pos.x + player_gap,
+                player_pos.y,
+                player_button_size.width,
+                player_button_size.height,
+                "Play",
+                player_font_size,
+                lambda: (MidiPlayer.play_audio(),),
+            ),
+            "btn_pause": Button(
+                player_pos.x + 2 * player_gap,
+                player_pos.y,
+                player_button_size.width,
+                player_button_size.height,
+                "Pause",
+                player_font_size,
+                lambda: (MidiPlayer.pause_audio(),),
+            ),
         }
-
-    def generate_midi_action(self):
-        text_to_convert = self.manager.shared_text
-        if not text_to_convert.strip():
-            self.elements["status_text"].text = "Texto vazio!"
-            return
-
-        try:
-            writer = MidiWriter()
-            writer.process_text(text_to_convert)
-            writer.save_midi("musica_gerada.mid")
-            self.elements["status_text"].text = "Arquivo Gerado!"
-        except Exception as e:
-            self.elements["status_text"].text = f"Erro: {e}"
 
     def enter(self):
         super().enter()
