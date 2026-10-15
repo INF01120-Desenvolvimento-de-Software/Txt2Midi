@@ -2,14 +2,17 @@ from abc import ABC, abstractmethod
 import pygame
 
 from midi_engine.MidiWriter import MidiWriter
-from .UiElements import Button, Text, TextBoxUI
+from ui.MidiConstants import DEFAULT_OUTPUT_FILENAME  
+from . import Layout, Theme  
+from .UiElements import Button, GradientBackground, Text, TextBoxUI 
 from storage.OSInterface import OSInterface
 
 
 class ScreenState(ABC):
-    def __init__(self, manager):
+    def __init__(self, manager, gradient_color=Theme.BACKGROUND_BASE):
         self.elements = {}
         self.manager = manager
+        self.background = GradientBackground(gradient_color) 
 
     @abstractmethod
     def enter(self):
@@ -29,6 +32,7 @@ class ScreenState(ABC):
 
     @abstractmethod
     def draw(self, surface):
+        self.background.draw(surface)
         for item in self.elements.values():
             if hasattr(item, "draw"):
                 item.draw(surface)
@@ -36,19 +40,25 @@ class ScreenState(ABC):
 
 class StartScreen(ScreenState):
     def __init__(self, manager):
-        super().__init__(manager)
+        super().__init__(manager, Theme.GRADIENT_START)
 
         self.elements = {
             "btn_start": Button(
-                300,
-                200,
-                200,
-                50,
+                Layout.START_BUTTON_X,
+                Layout.START_BUTTON_Y,
+                Layout.BUTTON_WIDTH,
+                Layout.BUTTON_HEIGHT,
                 "Começar",
-                36,
+                Theme.FONT_SIZE_BUTTON,
                 lambda: self.manager.change_state("edit"),
+                style=Theme.PRIMARY_BUTTON,
             ),
-            "title": Text(300, 160, "Txt2Midi", 60),
+            "title": Text(
+                Layout.START_TITLE_X,
+                Layout.START_TITLE_Y,
+                "Txt2Midi",
+                Theme.FONT_SIZE_TITLE,
+            ),
         }
 
     def enter(self):
@@ -61,51 +71,60 @@ class StartScreen(ScreenState):
         super().handle_event(event)
 
     def draw(self, surface: pygame.Surface):
-        surface.fill((30, 30, 40))
         super().draw(surface)
 
 
 class EditScreen(ScreenState):
     def __init__(self, manager):
-        super().__init__(manager)
+        super().__init__(manager, Theme.GRADIENT_EDIT)
 
         self.elements = {
             "btn_play": Button(
-                575,
-                525,
-                200,
-                50,
+                Layout.FOOTER_RIGHT_X,
+                Layout.FOOTER_Y,
+                Layout.BUTTON_WIDTH,
+                Layout.BUTTON_HEIGHT,
                 "Play",
-                36,
+                Theme.FONT_SIZE_BUTTON,
                 lambda: self.go_to_play_screen(),
+                style=Theme.PRIMARY_BUTTON,
             ),
-            "txt_input": TextBoxUI(50, 50, 400, 400, 24),
+            "txt_input": TextBoxUI(
+                Layout.TEXTBOX_X,
+                Layout.TEXTBOX_Y,
+                Layout.TEXTBOX_WIDTH,
+                Layout.TEXTBOX_HEIGHT,
+                Theme.FONT_SIZE_TEXTBOX,
+            ),
             "btn_home": Button(
-                350,
-                525,
-                200,
-                50,
+                Layout.FOOTER_LEFT_X,
+                Layout.FOOTER_Y,
+                Layout.BUTTON_WIDTH,
+                Layout.BUTTON_HEIGHT,
                 "Inicio",
-                36,
+                Theme.FONT_SIZE_BUTTON,
                 lambda: self.manager.change_state("start"),
+                style=Theme.SECONDARY_BUTTON,
             ),
             "btn_save_txt": Button(
-                50,
-                25,
-                100,
-                25,
+                Layout.SAVE_BUTTON_X,
+                Layout.TOOLBAR_Y,
+                Layout.SMALL_BUTTON_WIDTH,
+                Layout.SMALL_BUTTON_HEIGHT,
                 "Save TXT file",
-                18,
+                Theme.FONT_SIZE_BUTTON_SMALL,
                 lambda: self.save_txt_action(),
+                style=Theme.SECONDARY_BUTTON, 
             ),
             "btn_import_txt": Button(
-                175,
-                25,
-                100,
-                25,
+                Layout.IMPORT_BUTTON_X,
+                Layout.TOOLBAR_Y,
+                Layout.SMALL_BUTTON_WIDTH,
+                Layout.SMALL_BUTTON_HEIGHT,
                 "Import TXT file",
-                18,
+                Theme.FONT_SIZE_BUTTON_SMALL,
                 lambda: self.import_txt_action(),
+                style=Theme.SECONDARY_BUTTON,
             ),
         }
 
@@ -119,7 +138,6 @@ class EditScreen(ScreenState):
         super().handle_event(event)
 
     def draw(self, surface: pygame.Surface):
-        surface.fill((40, 50, 40))
         super().draw(surface)
 
     def save_txt_action(self):
@@ -138,45 +156,64 @@ class EditScreen(ScreenState):
 
 class PlayScreen(ScreenState):
     def __init__(self, manager):
-        super().__init__(manager)
+        super().__init__(manager, Theme.GRADIENT_PLAY)
         self.elements = {
             "btn_back": Button(
-                575,
-                525,
-                200,
-                50,
+                Layout.FOOTER_RIGHT_X,
+                Layout.FOOTER_Y,
+                Layout.BUTTON_WIDTH,
+                Layout.BUTTON_HEIGHT,
                 "Voltar",
-                36,
+                Theme.FONT_SIZE_BUTTON,
                 lambda: self.manager.change_state("edit"),
+                style=Theme.SECONDARY_BUTTON, 
             ),
             "btn_home": Button(
-                350,
-                525,
-                200,
-                50,
+                Layout.FOOTER_LEFT_X,
+                Layout.FOOTER_Y,
+                Layout.BUTTON_WIDTH,
+                Layout.BUTTON_HEIGHT,
                 "Inicio",
-                36,
+                Theme.FONT_SIZE_BUTTON,
                 lambda: self.manager.change_state("start"),
+                style=Theme.SECONDARY_BUTTON, 
             ),
             "btn_generate": Button(
-                300, 250, 200, 50, "Gerar MIDI", 36, lambda: self.generate_midi_action()
+                Layout.GENERATE_BUTTON_X,
+                Layout.GENERATE_BUTTON_Y,
+                Layout.BUTTON_WIDTH,
+                Layout.BUTTON_HEIGHT,
+                "Gerar MIDI",
+                Theme.FONT_SIZE_BUTTON,
+                lambda: self.generate_midi_action(),
+                style=Theme.PRIMARY_BUTTON,
             ),
-            "status_text": Text(400, 320, "Pronto", 32),
+            "status_text": Text(
+                Layout.STATUS_TEXT_X,
+                Layout.STATUS_TEXT_Y,
+                "Pronto",
+                Theme.FONT_SIZE_STATUS,
+                Theme.TEXT_SECONDARY,
+            ),
         }
 
     def generate_midi_action(self):
         text_to_convert = self.manager.shared_text
         if not text_to_convert.strip():
-            self.elements["status_text"].text = "Texto vazio!"
+            self._set_status("Texto vazio!", Theme.SPOTIFY_RED)
             return
 
         try:
             writer = MidiWriter()
             writer.process_text(text_to_convert)
-            writer.save_midi("musica_gerada.mid")
-            self.elements["status_text"].text = "Arquivo Gerado!"
+            writer.save_midi(DEFAULT_OUTPUT_FILENAME)
+            self._set_status("Arquivo Gerado!", Theme.SPOTIFY_GREEN)
         except Exception as e:
-            self.elements["status_text"].text = f"Erro: {e}"
+            self._set_status(f"Erro: {e}", Theme.SPOTIFY_RED)
+
+    def _set_status(self, message, color):
+        self.elements["status_text"].text = message
+        self.elements["status_text"].color = color
 
     def enter(self):
         super().enter()
@@ -188,5 +225,4 @@ class PlayScreen(ScreenState):
         super().handle_event(event)
 
     def draw(self, surface: pygame.Surface):
-        surface.fill((50, 30, 30))
         super().draw(surface)
