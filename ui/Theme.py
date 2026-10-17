@@ -3,9 +3,9 @@ from typing import NamedTuple, Tuple
 Color = Tuple[int, int, int]
 
 
-SPOTIFY_GREEN: Color = (29, 185, 84)  #1DB954
-SPOTIFY_GREEN_HOVER: Color = (30, 215, 96)  #1ED760
-SPOTIFY_RED: Color = (233, 20, 41)  #E91429 
+GREEN: Color = (29, 185, 84)  #1DB954
+GREEN_HOVER: Color = (30, 215, 96)  #1ED760
+RED: Color = (233, 20, 41)  #E91429 
 
 BLACK: Color = (0, 0, 0)
 WHITE: Color = (255, 255, 255)
@@ -23,7 +23,7 @@ GRADIENT_PLAY: Color = (122, 40, 58)
 GRADIENT_HEIGHT_RATIO = 0.6  # fração da altura da janela ocupada pelo degradê
 
 
-PILL_RADIUS_RATIO = 0.5  # raio = metade da altura -> botão em formato de pílula
+PILL_RADIUS_RATIO = 0.5  # raio = metade da altura
 TEXTBOX_BORDER_RADIUS = 8
 TEXTBOX_BORDER_WIDTH = 2
 
@@ -38,7 +38,7 @@ FONT_SIZE_BUTTON = 36
 FONT_SIZE_BUTTON_SMALL = 18
 FONT_SIZE_TEXTBOX = 24
 FONT_SIZE_STATUS = 32
-
+FONT_SIZE_PLAYER = 25
 
 
 class ButtonStyle(NamedTuple):
@@ -47,6 +47,6 @@ class ButtonStyle(NamedTuple):
     text_color: Color
 
 
-PRIMARY_BUTTON = ButtonStyle(SPOTIFY_GREEN, SPOTIFY_GREEN_HOVER, BLACK)
+PRIMARY_BUTTON = ButtonStyle(GREEN, GREEN_HOVER, BLACK)
 
 SECONDARY_BUTTON = ButtonStyle(SURFACE_ELEVATED, SURFACE_ELEVATED_HOVER, WHITE)
