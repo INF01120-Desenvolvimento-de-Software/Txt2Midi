@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from mido import Message
 
 from ui.MidiConstants import (
-    ACOUSTIC_GUITAR_NYLON,
-    DULCIMER,
-    FIDDLE,
+    BANDONEON,
+    TUBULAR_BELLS,
+    BAGPIPES,
     NO_DELAY,
     NOTE_A,
     NOTE_B,
@@ -17,7 +17,7 @@ from ui.MidiConstants import (
     NOTE_VELOCITY,
     REST_PLACEHOLDER_NOTE,
     SILENT_VELOCITY,
-    STEEL_DRUMS,
+    AGOGO,
 )
 
 REST = None
@@ -97,15 +97,15 @@ class NoteRule(Rule):
 class InstrumentRule(Rule):
     def __init__(self):
         self.instruments = {
-            "!": ACOUSTIC_GUITAR_NYLON,
-            "O": FIDDLE,
-            "o": FIDDLE,
-            "I": FIDDLE,
-            "i": FIDDLE,
-            "U": FIDDLE,
-            "u": FIDDLE,
-            ";": DULCIMER,
-            ",": STEEL_DRUMS,
+            "!": BANDONEON,
+            "O": BAGPIPES,
+            "o": BAGPIPES,
+            "I": BAGPIPES,
+            "i": BAGPIPES,
+            "U": BAGPIPES,
+            "u": BAGPIPES,
+            ";": TUBULAR_BELLS,
+            ",": AGOGO,
         }
 
     def match(self, char: str) -> bool:
