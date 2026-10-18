@@ -1,14 +1,14 @@
 import pygame
 from ui.ScreenManager import ScreenManager
+from ui import Layout, Theme
 
 
 def main():
     pygame.init()
-    pygame.key.set_repeat(400, 50)
-    screen = pygame.display.set_mode((800, 600))
+    pygame.key.set_repeat(Layout.KEY_REPEAT_DELAY_MS, Layout.KEY_REPEAT_INTERVAL_MS)
+    screen = pygame.display.set_mode((Layout.WINDOW_WIDTH, Layout.WINDOW_HEIGHT))
     pygame.display.set_caption("Txt2Midi")
     clock = pygame.time.Clock()
-    font = pygame.font.SysFont(None, 32)
 
     manager = ScreenManager()
 
@@ -25,7 +25,7 @@ def main():
         manager.draw(screen)
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(Layout.FPS)
 
     pygame.quit()
 
