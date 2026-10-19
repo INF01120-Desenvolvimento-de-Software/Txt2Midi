@@ -1,7 +1,7 @@
 import pygame
 from abc import ABC, abstractmethod
 
-from . import Theme 
+from . import Theme
 
 TEXTBOX_GAP = 10
 GAPS_PER_AXIS = 2
@@ -59,15 +59,14 @@ class Text(UIElements):
     def __init__(self, x, y, text, size, color=Theme.TEXT_PRIMARY):
         super().__init__(x, y, size)
         self.text = text
-        self.color = color  
+        self.color = color
 
     def draw(self, surface):
         if not self.visible:
             return
 
-        half_width = surface.get_width() // 2
         text_surf = self.font.render(self.text, True, self.color)
-        text_rect = text_surf.get_rect(midtop=(half_width, self.y))
+        text_rect = text_surf.get_rect(midtop=(self.x, self.y))
         surface.blit(text_surf, text_rect)
 
 
@@ -232,11 +231,11 @@ class TextBoxUI(UIElements):
 
     def _draw_background(self, surface):
         radius = Theme.TEXTBOX_BORDER_RADIUS
-        pygame.draw.rect(surface, Theme.SURFACE_ELEVATED, self.rect, border_radius=radius)
-
-        border_color = (
-            Theme.WHITE if self.active else Theme.SURFACE_ELEVATED_HOVER
+        pygame.draw.rect(
+            surface, Theme.SURFACE_ELEVATED, self.rect, border_radius=radius
         )
+
+        border_color = Theme.WHITE if self.active else Theme.SURFACE_ELEVATED_HOVER
         pygame.draw.rect(
             surface,
             border_color,
@@ -273,8 +272,8 @@ class TextBoxUI(UIElements):
             if blink_phase < Theme.CURSOR_VISIBLE_MS:
                 pygame.draw.line(
                     surface,
-                    Theme.TEXT_PRIMARY,  
+                    Theme.TEXT_PRIMARY,
                     (cursor_x, cursor_y),
                     (cursor_x, cursor_y + self.font.get_height()),
-                    Theme.CURSOR_WIDTH, 
+                    Theme.CURSOR_WIDTH,
                 )

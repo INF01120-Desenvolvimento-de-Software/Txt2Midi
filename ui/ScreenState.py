@@ -92,11 +92,7 @@ class EditScreen(ScreenState):
                 Layout.BUTTON_HEIGHT,
                 "Gerar",
                 Theme.FONT_SIZE_BUTTON,
-                lambda: (
-                    self.go_to_play_screen(),
-                    self.generate_midi_action(),
-                    MidiPlayer.load_midi(DEFAULT_OUTPUT_FILENAME),
-                ),
+                lambda: (self.go_to_play_screen()),
                 style=Theme.PRIMARY_BUTTON,
             ),
             "btn_save_txt": Button(
@@ -119,35 +115,10 @@ class EditScreen(ScreenState):
                 lambda: self.import_txt_action(),
                 style=Theme.SECONDARY_BUTTON,
             ),
-            "status_text": Text(
-                Layout.STATUS_TEXT_X,
-                Layout.STATUS_TEXT_Y,
-                "",
-                Theme.FONT_SIZE_STATUS,
-                color=Theme.TEXT_SECONDARY,
-            ),
         }
-
-    def generate_midi_action(self):
-        text_to_convert = self.manager.shared_text
-        if not text_to_convert.strip():
-            self.elements["status_text"].text = "Texto vazio!"
-            self.elements["status_text"].color = Theme.RED
-            return
-
-        try:
-            writer = MidiWriter()
-            writer.process_text(text_to_convert)
-            writer.save_midi(DEFAULT_OUTPUT_FILENAME)
-            self.elements["status_text"].text = "Arquivo Gerado!"
-            self.elements["status_text"].color = Theme.GREEN
-        except Exception as e:
-            self.elements["status_text"].text = f"Erro: {e}"
-            self.elements["status_text"].color = Theme.RED
 
     def enter(self):
         super().enter()
-        self.elements["status_text"].text = ""
 
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
@@ -219,14 +190,41 @@ class PlayScreen(ScreenState):
                 lambda: MidiPlayer.pause_audio(),
                 style=Theme.SECONDARY_BUTTON,
             ),
+            "status_text": Text(
+                Layout.STATUS_TEXT_X,
+                Layout.STATUS_TEXT_Y,
+                "",
+                Theme.FONT_SIZE_STATUS,
+                color=Theme.TEXT_SECONDARY,
+            ),
         }
+
+    def generate_midi_action(self):
+        text_to_convert = self.manager.shared_text
+        if not text_to_convert.strip():
+            self.elements["status_text"].text = "Texto vazio!"
+            self.elements["status_text"].color = Theme.RED
+            return
+
+        try:
+            writer = MidiWriter()
+            writer.process_text(text_to_convert)
+            writer.save_midi(DEFAULT_OUTPUT_FILENAME)
+            self.elements["status_text"].text = "Arquivo Gerado!"
+            self.elements["status_text"].color = Theme.GREEN
+            MidiPlayer.load_midi(DEFAULT_OUTPUT_FILENAME)
+        except Exception as e:
+            self.elements["status_text"].text = f"Erro: {e}"
+            self.elements["status_text"].color = Theme.RED
 
     def enter(self):
         super().enter()
+        self.generate_midi_action()
 
     def exit(self):
-        MidiPlayer.stop_audio()
         super().exit()
+        self.elements["status_text"].text = ""
+        MidiPlayer.stop_audio()
 
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
