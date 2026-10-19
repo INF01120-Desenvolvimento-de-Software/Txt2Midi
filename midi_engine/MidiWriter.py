@@ -1,5 +1,6 @@
 from mido import MidiFile, MidiTrack, Message
 from midi_engine.Rule import NoteRule, InstrumentRule
+from ui.MidiConstants import MIDI_EXTENSION 
 
 
 class MidiState:
@@ -23,8 +24,8 @@ class MidiWriter:
                     break
 
     def save_midi(self, file_name: str):
-        if not file_name.endswith(".mid"):
-            file_name += ".mid"
+        if not file_name.endswith(MIDI_EXTENSION):
+            file_name += MIDI_EXTENSION
 
         self.midi.save(file_name)
         print(f"Arquivo {file_name} salvo com sucesso")

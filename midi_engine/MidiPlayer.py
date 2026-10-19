@@ -27,3 +27,8 @@ class MidiPlayer:
         pygame.mixer.music.stop()
         pygame.mixer.music.play()
         cls.paused = False
+
+    @classmethod
+    def stop_audio(cls):
+        pygame.mixer.music.stop()
+        cls.paused = False

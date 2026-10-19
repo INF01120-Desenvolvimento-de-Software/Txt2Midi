@@ -1,6 +1,27 @@
 from abc import ABC, abstractmethod
 from mido import Message
 
+from ui.MidiConstants import (
+    BANDONEON,
+    TUBULAR_BELLS,
+    BAGPIPES,
+    NO_DELAY,
+    NOTE_A,
+    NOTE_B,
+    NOTE_C,
+    NOTE_D,
+    NOTE_DURATION_TICKS,
+    NOTE_E,
+    NOTE_F,
+    NOTE_G,
+    NOTE_VELOCITY,
+    REST_PLACEHOLDER_NOTE,
+    SILENT_VELOCITY,
+    AGOGO,
+)
+
+REST = None
+
 
 class Rule(ABC):
     @abstractmethod
@@ -15,20 +36,20 @@ class Rule(ABC):
 class NoteRule(Rule):
     def __init__(self):
         self.notes = {
-            "A": 69,
-            "B": 71,
-            "C": 60,
-            "D": 62,
-            "E": 64,
-            "F": 65,
-            "G": 67,
-            "a": None,
-            "c": None,
-            "d": None,
-            "e": None,
-            "f": None,
-            "g": None,
-            "h": None,
+            "A": NOTE_A,
+            "B": NOTE_B,
+            "C": NOTE_C,
+            "D": NOTE_D,
+            "E": NOTE_E,
+            "F": NOTE_F,
+            "G": NOTE_G,
+            "a": REST,
+            "c": REST,
+            "d": REST,
+            "e": REST,
+            "f": REST,
+            "g": REST,
+            "h": REST,
         }
 
     def match(self, char: str) -> bool:
@@ -37,30 +58,54 @@ class NoteRule(Rule):
     def apply(self, char: str, state):
         musical_note = self.notes[char]
 
-        if musical_note is None:
-            state.track.append(Message("note_on", note=60, velocity=0, time=0))
-            state.track.append(Message("note_off", note=60, velocity=0, time=480))
-        else:
+        if musical_note is REST:
             state.track.append(
-                Message("note_on", note=musical_note, velocity=80, time=0)
+                Message(
+                    "note_on",
+                    note=REST_PLACEHOLDER_NOTE,
+                    velocity=SILENT_VELOCITY,
+                    time=NO_DELAY,
+                )
             )
             state.track.append(
-                Message("note_off", note=musical_note, velocity=80, time=480)
+                Message(
+                    "note_off",
+                    note=REST_PLACEHOLDER_NOTE,
+                    velocity=SILENT_VELOCITY,
+                    time=NOTE_DURATION_TICKS,
+                )
+            )
+        else:
+            state.track.append(
+                Message(
+                    "note_on",
+                    note=musical_note,
+                    velocity=NOTE_VELOCITY,
+                    time=NO_DELAY,
+                )
+            )
+            state.track.append(
+                Message(
+                    "note_off",
+                    note=musical_note,
+                    velocity=NOTE_VELOCITY,
+                    time=NOTE_DURATION_TICKS,
+                )
             )
 
 
 class InstrumentRule(Rule):
     def __init__(self):
         self.instruments = {
-            "!": 24,
-            "O": 110,
-            "o": 110,
-            "I": 110,
-            "i": 110,
-            "U": 110,
-            "u": 110,
-            ";": 15,
-            ",": 114,
+            "!": BANDONEON,
+            "O": BAGPIPES,
+            "o": BAGPIPES,
+            "I": BAGPIPES,
+            "i": BAGPIPES,
+            "U": BAGPIPES,
+            "u": BAGPIPES,
+            ";": TUBULAR_BELLS,
+            ",": AGOGO,
         }
 
     def match(self, char: str) -> bool:
@@ -68,4 +113,6 @@ class InstrumentRule(Rule):
 
     def apply(self, char: str, state):
         instrument = self.instruments[char]
-        state.track.append(Message("program_change", program=instrument, time=0))
+        state.track.append(
+            Message("program_change", program=instrument, time=NO_DELAY)
+        )
