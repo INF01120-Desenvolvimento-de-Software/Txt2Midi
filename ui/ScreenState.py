@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pygame
 
+from midi_engine.Exceptions import MidiLoadError, MidiSaveError
 from midi_engine.MidiPlayer import MidiPlayer
 from midi_engine.MidiWriter import MidiWriter
 from ui.MidiConstants import DEFAULT_OUTPUT_FILENAME
@@ -213,8 +214,11 @@ class PlayScreen(ScreenState):
             self.elements["status_text"].text = "Arquivo Gerado!"
             self.elements["status_text"].color = Theme.GREEN
             MidiPlayer.load_midi(DEFAULT_OUTPUT_FILENAME)
-        except Exception as e:
-            self.elements["status_text"].text = f"Erro: {e}"
+        except MidiSaveError:
+            self.elements["status_text"].text = "Erro ao salvar!"
+            self.elements["status_text"].color = Theme.RED
+        except MidiLoadError:
+            self.elements["status_text"].text = "Erro ao carregar!"
             self.elements["status_text"].color = Theme.RED
 
     def enter(self):
@@ -228,3 +232,4 @@ class PlayScreen(ScreenState):
 
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
+        

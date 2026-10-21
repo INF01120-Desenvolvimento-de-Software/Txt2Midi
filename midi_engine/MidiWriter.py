@@ -1,4 +1,5 @@
 from mido import MidiFile, MidiTrack, Message
+from midi_engine.Exceptions import MidiSaveError
 from midi_engine.Rule import NoteRule, InstrumentRule
 from ui.MidiConstants import MIDI_EXTENSION 
 
@@ -27,5 +28,9 @@ class MidiWriter:
         if not file_name.endswith(MIDI_EXTENSION):
             file_name += MIDI_EXTENSION
 
-        self.midi.save(file_name)
+        try:
+            self.midi.save(file_name)
+        except OSError as error:
+            raise MidiSaveError(file_name) from error
+
         print(f"Arquivo {file_name} salvo com sucesso")
