@@ -4,16 +4,24 @@ from ui.MidiConstants import (NOTE_A, NOTE_B, NOTE_C, NOTE_D, NOTE_E, NOTE_F, NO
                               ACCORDION, HARMONICA, VIOLIN, CELLO, CONTRABASS, ELETRIC_BASS,
                               ELETRIC_GUITAR, ACOUSTIC_GUITAR, BANJO, FLUTE, CLARINET, SOPRANO_SAX,
                               OCARINA, TRUMPET, TUBA, MARIMBA, XYLOPHONE, KALIMBA, SEASHORE,
+                              ELETRIC_PIANO, ENGLISH_HORN, PIANO0,
                               DURATION_EIGHTH, DURATION_HALF, DURATION_QUARTER, DURATION_SIXTEENTH, DURATION_SIXTY_FOURTH,
-                              DURATION_THIRTY_SECOND, DURATION_WHOLE)
+                              DURATION_THIRTY_SECOND, DURATION_WHOLE,
+                              VOLUME_VOICE0, VOLUME_VOICE1, VOLUME_VOICE2, VOLUME_VOICE3,
+                              DEFAULT_BPM, MIN_BPM, MAX_BPM, BPM_STEP, SEMITONES_PER_OCTAVE,
+                              MAX_MIDI_NOTE, MAX_OCTAVE_OFFSET, BASE_OCTAVE, DEFAULT_DURATION, TOTAL_VOICES)
 
 class Rules:
+
+    # Classe responsável pelas regras da escrita do arquivo midi
 
     def __init__(self):
 
         self.midi = MidiFile()
         self.track = MidiTrack()
         self.midi.tracks.append(self.track)
+
+    # Dicionário do mapeamento das notas e acidentes:
 
         self.notes = {
             'A': NOTE_A, 'B': NOTE_B, 'C': NOTE_C, 'D': NOTE_D,
@@ -27,6 +35,8 @@ class Rules:
             'a': None, 'b': None,'c': None, 'd': None, 
             'e': None, 'f': None, 'g': None, 'h': None,     
         }
+
+    # Dicionário dos instrumentos:
 
         self.instruments = {
             '!': BANDONEON, 
@@ -47,6 +57,8 @@ class Rules:
             'S': XYLOPHONE, 's': KALIMBA, 
         }
 
+    # Dicionário das durações das notas:
+
         self.durations = {
             '1': DURATION_WHOLE, 
             '2': DURATION_HALF, 
@@ -59,36 +71,43 @@ class Rules:
 
     def parse_text(self, text: str) -> MidiFile:
 
+    # Método que processa o texto de entrada linha por linha, onde cada uma é uma voz diferente
+
         midi = MidiFile()
         lines = text.splitlines()
+
+    # Interpretador das linhas como vozes:
 
         for voice_number, line in enumerate (lines):
 
             track = MidiTrack()
             midi.tracks.append(track)
 
-            volumes_iniciais = [100, 80, 60, 40] # Sei que aqui a variável ta com nome em pt-br, 
-                                                 # dps vou arrumar é só pra achar mais facil!!
+    # Definições iniciais:
 
-            initial_velocity = volumes_iniciais[voice_number % 4]
+            default_volume = [VOLUME_VOICE0, VOLUME_VOICE1, VOLUME_VOICE2, VOLUME_VOICE3] 
+
+            initial_velocity = default_volume[voice_number % TOTAL_VOICES]
             valid_note = False
 
-            instrumentos_iniciais = [24, 20, 0, 70] # Aqui tbm
+            default_instruments = [ELETRIC_PIANO, PIPE_ORGAN, PIANO0, ENGLISH_HORN]
             
-            current_instrument = instrumentos_iniciais[voice_number % 4]
+            current_instrument = default_instruments[voice_number % TOTAL_VOICES]
 
             track.append(Message('program_change', program=current_instrument, time=0))
 
-            duration_note = 480
+            duration_note = DEFAULT_DURATION
 
-            current_bpm = 120
+            current_bpm = DEFAULT_BPM
             track.append(MetaMessage('set_tempo', tempo=bpm2tempo(current_bpm), time=0))
             
-            base_octave = 6 - (voice_number % 4)
+            base_octave = 6 - (voice_number % TOTAL_VOICES)
             octave_offset = 0
-            last_note = 60
+            last_note = NOTE_C
 
             i = 0
+
+        # Leitura dos caracteres de cada linha:
 
             while i < len(line):
                 caractere = line[i]
@@ -99,44 +118,56 @@ class Rules:
                     if end_bracket != -1:
                         try:
                             delay_beats = int(line[i+1:end_bracket])
-                            track.append(Message('note_on', note=60, velocity=0, time=delay_beats * 480))
+                            track.append(Message('note_on', note=NOTE_C, velocity=0, time=delay_beats * DEFAULT_DURATION))
                             i = end_bracket + 1
                             continue
                         except ValueError:
                             pass
+
+            # Espaço em branco que dobra o volume:
         
                 if caractere == ' ':
-                    initial_velocity = min(127, initial_velocity * 2)
+                    initial_velocity = min(MAX_MIDI_NOTE, initial_velocity * 2)
                     i = i + 1
                     continue
 
-                elif caractere == '?' or caractere == '.':
-                    octave_offset = octave_offset + 12
+            # Subida de oitava:
 
-                    if octave_offset > 36:
+                elif caractere == '?' or caractere == '.':
+                    octave_offset = octave_offset + SEMITONES_PER_OCTAVE
+
+                    if octave_offset > MAX_OCTAVE_OFFSET:
                         octave_offset = 0
                     valid_note = False
                     i = i + 1
 
-                elif caractere == 'V':
-                    octave_offset = octave_offset - 12
+            # Descida de oitava:
 
-                    if octave_offset < -36:
-                        octave_offset = -36
+                elif caractere == 'V':
+                    octave_offset = octave_offset - SEMITONES_PER_OCTAVE
+
+                    if octave_offset < -MAX_OCTAVE_OFFSET:
+                        octave_offset = -MAX_OCTAVE_OFFSET
                     valid_note = False
                     i = i + 1
+
+            # Acelerar o BPM:
 
                 elif caractere == '>':
-                    current_bpm = min(300, current_bpm + 10)
+                    current_bpm = min(MAX_BPM, current_bpm + BPM_STEP)
                     track.append(MetaMessage('set_tempo', tempo=bpm2tempo(current_bpm), time=0))
                     valid_note = False
                     i = i + 1
 
+            # Diminuir o BPM:
+
                 elif caractere == '<':
-                    current_bpm = max(20, current_bpm - 10)
+                    current_bpm = max(MIN_BPM, current_bpm - BPM_STEP)
                     track.append(MetaMessage('set_tempo', tempo=bpm2tempo(current_bpm), time=0))
                     valid_note = False
                     i = i + 1
+
+            # Mudança de instrumentos:
 
                 elif caractere.isdigit():
                     digit = int(caractere)
@@ -144,20 +175,26 @@ class Rules:
                     if digit % 2 == 0:
                         current_instrument = current_instrument + digit
                     else:
-                        current_instrument = 15
+                        current_instrument = TUBULAR_BELLS
 
                     valid_note = False
                     track.append(Message('program_change', program=current_instrument, time=0))
                     i = i + 1
+
+            # Processamento das notas musicais e as suas durações:
 
                 elif caractere in self.notes:
 
                     note_key = caractere
                     consumed = 1
 
+                    # Verificar os acidentes musicais:
+
                     if i + 1 < len(line) and line[i + 1] in ('#', 'b'):
                         note_key = note_key + line[i + 1]
                         consumed = 2
+
+                    # Verificar a duração da nota:
 
                     if i + consumed < len(line) and line[i + consumed] == ':':
                         if i + consumed + 1 < len(line):
@@ -168,17 +205,21 @@ class Rules:
 
                     musical_note = self.notes[note_key]
 
+                    # Tratamento das pausas:
+
                     if musical_note is None:
                         valid_note = True
-                        last_note = 60
-                        track.append(Message('note_on', note=60, velocity=0, time=duration_note))
+                        last_note = NOTE_C
+                        track.append(Message('note_on', note=NOTE_C, velocity=0, time=duration_note))
                         i = i + consumed
                         continue
 
-                    final_note = musical_note + octave_offset + base_octave * 12
+                    # Cálculo final da nota:
 
-                    if final_note > 127:
-                        final_note = 127
+                    final_note = musical_note + octave_offset + base_octave * SEMITONES_PER_OCTAVE
+
+                    if final_note > MAX_MIDI_NOTE:
+                        final_note = MAX_MIDI_NOTE
 
                     valid_note = True
                     last_note = final_note
@@ -188,6 +229,8 @@ class Rules:
 
                     octave_offset = 0
                     i = i + consumed
+
+                # Mudança de instrumentos por caractere:
 
                 elif caractere in self.instruments:
                     instrument = self.instruments[caractere]
@@ -202,7 +245,7 @@ class Rules:
                         track.append(Message('note_on', note=last_note, velocity=initial_velocity, time=0))
                         track.append(Message('note_off', note=last_note, velocity=initial_velocity, time=duration_note))
                     else:
-                        track.append(Message('note_on', note=60, velocity=0,))
+                        track.append(Message('note_on', note=NOTE_C, velocity=0,))
                     i = i + 1
 
         return midi
