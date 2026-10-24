@@ -139,6 +139,7 @@ class EditScreen(ScreenState):
 class PlayScreen(ScreenState):
     def __init__(self, manager):
         super().__init__(manager, Theme.GRADIENT_PLAY)
+        self.writer = None
         self.elements = {
             "btn_home": Button(
                 Layout.FOOTER_LEFT_X,
@@ -190,6 +191,16 @@ class PlayScreen(ScreenState):
                 lambda: MidiPlayer.pause_audio(),
                 style=Theme.SECONDARY_BUTTON,
             ),
+            "btn_export_midi": Button(
+                Layout.EXPORT_MIDI_BUTTON_X,
+                Layout.EXPORT_MIDI_BUTTON_Y,
+                Layout.EXPORT_MIDI_BUTTON_WIDTH,
+                Layout.EXPORT_MIDI_BUTTON_HEIGHT,
+                "Save Midi",
+                Theme.FONT_SIZE_PLAYER,
+                lambda: self.export_midi_action(),
+                style=Theme.SECONDARY_BUTTON,
+            ),
             "status_text": Text(
                 Layout.STATUS_TEXT_X,
                 Layout.STATUS_TEXT_Y,
@@ -207,15 +218,29 @@ class PlayScreen(ScreenState):
             return
 
         try:
-            writer = MidiWriter()
-            writer.process_text(text_to_convert)
-            writer.save_midi(DEFAULT_OUTPUT_FILENAME)
+            self.writer = MidiWriter()
+            self.writer.process_text(text_to_convert)
+            self.writer.save_midi(DEFAULT_OUTPUT_FILENAME)
             self.elements["status_text"].text = "Arquivo Gerado!"
             self.elements["status_text"].color = Theme.GREEN
             MidiPlayer.load_midi(DEFAULT_OUTPUT_FILENAME)
         except Exception as e:
             self.elements["status_text"].text = f"Erro: {e}"
             self.elements["status_text"].color = Theme.RED
+
+    def export_midi_action(self):
+        if not self.writer or not self.writer.midi:
+            self.elements["status_text"].text = "Nenhum MIDI gerado!"
+            self.elements["status_text"].color = Theme.RED
+            return
+
+        success = OSInterface.save_midi_content(self.writer.midi)
+        if success:
+            self.elements["status_text"].text = "MIDI exportado!"
+            self.elements["status_text"].color = Theme.GREEN
+        else:
+            self.elements["status_text"].text = "Exportação cancelada"
+            self.elements["status_text"].color = Theme.TEXT_SECONDARY
 
     def enter(self):
         super().enter()

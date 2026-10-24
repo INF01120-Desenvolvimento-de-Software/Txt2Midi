@@ -38,7 +38,6 @@ class TxtFile(File):
         file.text = file.read_file()
         return file
 
-
     def read_file(self) -> str:
         if not self.path:
             raise ValueError("Path is not defined.")
@@ -54,9 +53,6 @@ class TxtFile(File):
             raise ValueError("Path is not defined.")
         with open(self.path, "w", encoding="utf-8") as file:
             file.write(self.text)
-
-class MidiFile(File):
-    allowed_extension = ".mid"
 
     def __init__(self, path):
         super().__init__(path)
