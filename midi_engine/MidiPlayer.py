@@ -36,3 +36,11 @@ class MidiPlayer:
             cls.paused = False
         except pygame.error:
             pass
+
+    @classmethod
+    def stop_audio(cls):
+        try:
+            pygame.mixer.music.stop()
+            cls.paused = False
+        except pygame.error:
+            pass
