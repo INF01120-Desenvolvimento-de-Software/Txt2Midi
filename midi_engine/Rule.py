@@ -182,7 +182,7 @@ class Rules:
             current_bpm = DEFAULT_BPM
             track.append(MetaMessage("set_tempo", tempo=bpm2tempo(current_bpm), time=0))
 
-            base_octave = 6 - (voice_number % TOTAL_VOICES)
+            base_octave = BASE_OCTAVE - (voice_number % TOTAL_VOICES)
             octave_offset = 0
             last_note = NOTE_C
 
@@ -207,10 +207,11 @@ class Rules:
                                     time=delay_beats * DEFAULT_DURATION,
                                 )
                             )
-                            i = end_bracket + 1
-                            continue
                         except ValueError:
                             pass
+
+                        i = end_bracket + 1
+                        continue
 
                 # Espaço em branco que dobra o volume:
 
@@ -259,7 +260,7 @@ class Rules:
                     valid_note = False
                     i = i + 1
 
-                # Mudança de instrumentos:
+                # Mudança de instrumentos numéricos:
 
                 elif caractere.isdigit():
                     digit = int(caractere)
@@ -343,13 +344,13 @@ class Rules:
                         )
                     )
 
-                    octave_offset = 0
                     i = i + consumed
 
                 # Mudança de instrumentos por caractere:
 
                 elif caractere in self.instruments:
                     instrument = self.instruments[caractere]
+                    current_instrument = instrument
 
                     valid_note = False
 
