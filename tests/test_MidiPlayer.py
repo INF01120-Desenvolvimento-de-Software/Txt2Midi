@@ -58,7 +58,6 @@ class TestMidiPlayer(unittest.TestCase):
     def test_play_without_loaded_file_handled(self, mock_play):
         # Teste da proteção try/except ao clicar em play sem arquivo
         mock_play.side_effect = pygame.error("music not loaded")
-        # Apenas chamar a função é suficiente. Se o try/except falhar, o teste dá erro.
         MidiPlayer.play_audio()
         mock_play.assert_called_once()
 
