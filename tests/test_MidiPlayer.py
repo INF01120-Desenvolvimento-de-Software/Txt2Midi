@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+import pygame
 from midi_engine.MidiPlayer import MidiPlayer
 
 
@@ -52,6 +53,30 @@ class TestMidiPlayer(unittest.TestCase):
         mock_load.side_effect = FileNotFoundError("Arquivo MIDI não encontrado")
         with self.assertRaises(FileNotFoundError):
             MidiPlayer.load_midi("inexistente.mid")
+
+    # --- NOVOS TESTES: PROTEÇÃO TRY/EXCEPT ---
+
+    @patch("pygame.mixer.music.play")
+    def test_play_without_loaded_file_handled(self, mock_play):
+        # Teste da proteção try/except ao clicar em play sem arquivo
+        mock_play.side_effect = pygame.error("music not loaded")
+        # Apenas chamar a função é suficiente. Se o try/except falhar, o teste dá erro.
+        MidiPlayer.play_audio()
+        mock_play.assert_called_once()
+
+    @patch("pygame.mixer.music.pause")
+    def test_pause_without_loaded_file_handled(self, mock_pause):
+        # Teste da proteção try/except ao clicar em pause sem arquivo
+        mock_pause.side_effect = pygame.error("music not loaded")
+        MidiPlayer.pause_audio()
+        mock_pause.assert_called_once()
+
+    @patch("pygame.mixer.music.stop")
+    def test_reset_without_loaded_file_handled(self, mock_stop):
+        # Teste da proteção try/except ao clicar em reset (stop) sem arquivo
+        mock_stop.side_effect = pygame.error("music not loaded")
+        MidiPlayer.reset_audio()
+        mock_stop.assert_called_once()
 
 
 if __name__ == "__main__":
