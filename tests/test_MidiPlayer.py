@@ -54,8 +54,6 @@ class TestMidiPlayer(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             MidiPlayer.load_midi("inexistente.mid")
 
-    # --- NOVOS TESTES: PROTEÇÃO TRY/EXCEPT ---
-
     @patch("pygame.mixer.music.play")
     def test_play_without_loaded_file_handled(self, mock_play):
         # Teste da proteção try/except ao clicar em play sem arquivo
