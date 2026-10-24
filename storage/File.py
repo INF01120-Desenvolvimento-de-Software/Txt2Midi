@@ -53,6 +53,3 @@ class TxtFile(File):
             raise ValueError("Path is not defined.")
         with open(self.path, "w", encoding="utf-8") as file:
             file.write(self.text)
-
-    def __init__(self, path):
-        super().__init__(path)
