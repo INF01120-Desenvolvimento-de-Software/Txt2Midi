@@ -1,10 +1,12 @@
-from ui.MidiConstants import MIDI_EXTENSION
+from midi_engine.MidiConstants import MIDI_EXTENSION
 from midi_engine.Rule import Rules
+from midi_engine.MidiSettings import MidiSettings
+
 
 class MidiWriter:
 
-    def __init__(self):
-        self.parser = Rules()
+    def __init__(self, settings: MidiSettings = None):
+        self.parser = Rules(settings or MidiSettings())
         self.midi = None
 
     def process_text(self, text: str):
