@@ -2,19 +2,9 @@ from dataclasses import dataclass
 from typing import Tuple
 
 from midi_engine.MidiConstants import (
-    DEFAULT_BPM,
-    MIN_BPM,
-    MAX_BPM,
-    BPM_STEP,
-    BASE_OCTAVE,
     MIN_BASE_OCTAVE,
     MAX_BASE_OCTAVE,
     MAX_MIDI_NOTE,
-    DEFAULT_DURATION,
-    VOLUME_VOICE0,
-    VOLUME_VOICE1,
-    VOLUME_VOICE2,
-    VOLUME_VOICE3,
     HARPSICHORD,
     PIPE_ORGAN,
     PIANO0,
@@ -30,21 +20,21 @@ class VoiceConfig:
 
 @dataclass(frozen=True)
 class MidiSettings:
-    initial_bpm: int = DEFAULT_BPM
-    min_bpm: int = MIN_BPM
-    max_bpm: int = MAX_BPM
-    bpm_step: int = BPM_STEP
+    initial_bpm: int = 120
+    min_bpm: int = 20
+    max_bpm: int = 300
+    bpm_step: int = 10
 
-    base_octave: int = BASE_OCTAVE
+    base_octave: int = 6
 
     voices: Tuple[VoiceConfig, ...] = (
-        VoiceConfig(instrument=HARPSICHORD, volume=VOLUME_VOICE0),
-        VoiceConfig(instrument=PIPE_ORGAN, volume=VOLUME_VOICE1),
-        VoiceConfig(instrument=PIANO0, volume=VOLUME_VOICE2),
-        VoiceConfig(instrument=BASSOON, volume=VOLUME_VOICE3),
+        VoiceConfig(instrument=HARPSICHORD, volume=100),
+        VoiceConfig(instrument=PIPE_ORGAN, volume=80),
+        VoiceConfig(instrument=PIANO0, volume=60),
+        VoiceConfig(instrument=BASSOON, volume=40),
     )
 
-    default_duration: int = DEFAULT_DURATION
+    default_duration: int = 480
 
     def __post_init__(self):
         if self.min_bpm >= self.max_bpm:
