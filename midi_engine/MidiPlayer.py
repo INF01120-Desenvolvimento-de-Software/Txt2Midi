@@ -4,31 +4,35 @@ import pygame
 class MidiPlayer:
     paused = False
 
-    @staticmethod
-    def load_midi(file_path):
+    @classmethod
+    def load_midi(cls, file_path):
         pygame.mixer.music.load(file_path)
+        cls.paused = False
 
     @classmethod
     def play_audio(cls):
-        if cls.paused:
-            pygame.mixer.music.unpause()
-        else:
-            pygame.mixer.music.play()
-        cls.paused = False
+        try:
+            if cls.paused:
+                pygame.mixer.music.unpause()
+            else:
+                pygame.mixer.music.play()
+            cls.paused = False
+        except pygame.error:
+            pass  # Ignora o clique caso nenhum arquivo tenha sido carregado
 
     @classmethod
     def pause_audio(cls):
-
-        pygame.mixer.music.pause()
-        cls.paused = True
+        try:
+            pygame.mixer.music.pause()
+            cls.paused = True
+        except pygame.error:
+            pass
 
     @classmethod
     def reset_audio(cls):
-        pygame.mixer.music.stop()
-        pygame.mixer.music.play()
-        cls.paused = False
-
-    @classmethod
-    def stop_audio(cls):
-        pygame.mixer.music.stop()
-        cls.paused = False
+        try:
+            pygame.mixer.music.stop()
+            pygame.mixer.music.play()
+            cls.paused = False
+        except pygame.error:
+            pass
