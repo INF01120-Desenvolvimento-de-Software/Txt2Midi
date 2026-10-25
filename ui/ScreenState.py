@@ -3,9 +3,9 @@ import pygame
 
 from midi_engine.MidiPlayer import MidiPlayer
 from midi_engine.MidiWriter import MidiWriter
-from ui.MidiConstants import DEFAULT_OUTPUT_FILENAME
+from midi_engine.MidiConstants import DEFAULT_OUTPUT_FILENAME
 from . import Layout, Theme
-from .UiElements import Button, GradientBackground, Text, TextBoxUI
+from .UiElements import Button, GradientBackground, Slider, Text, TextBoxUI
 from storage.OSInterface import OSInterface
 
 
@@ -117,6 +117,8 @@ class EditScreen(ScreenState):
             ),
         }
 
+        self._add_setting_sliders()
+
     def enter(self):
         super().enter()
 
@@ -134,6 +136,34 @@ class EditScreen(ScreenState):
     def go_to_play_screen(self):
         self.manager.shared_text = self.elements["txt_input"].text
         self.manager.change_state("play")
+
+    def _add_setting_sliders(self):
+        for index, control in enumerate(self.manager.setting_controls):
+            y = Layout.SLIDER_Y + index * Layout.SLIDER_GAP
+
+            slider = Slider(
+                Layout.SLIDER_X,
+                y,
+                Layout.SLIDER_WIDTH,
+                control["label"],
+                Theme.FONT_SIZE_BUTTON_SMALL,
+                control["minimum"],
+                control["maximum"],
+                control["value"],
+                on_change=control["on_change"],
+            )
+            self.elements[f"slider_{index}"] = slider
+
+            self.elements[f"btn_reset_{index}"] = Button(
+                Layout.SLIDER_X + Layout.SLIDER_WIDTH - Layout.SLIDER_RESET_WIDTH,
+                y - 2,
+                Layout.SLIDER_RESET_WIDTH,
+                Layout.SLIDER_RESET_HEIGHT,
+                "Reset",
+                Theme.FONT_SIZE_BUTTON_SMALL,
+                slider.reset,
+                style=Theme.SECONDARY_BUTTON,
+            )
 
 
 class PlayScreen(ScreenState):
@@ -218,7 +248,7 @@ class PlayScreen(ScreenState):
             return
 
         try:
-            self.writer = MidiWriter()
+            self.writer = MidiWriter(self.manager.build_midi_settings())
             self.writer.process_text(text_to_convert)
             self.writer.save_midi(DEFAULT_OUTPUT_FILENAME)
             self.elements["status_text"].text = "Arquivo Gerado!"
