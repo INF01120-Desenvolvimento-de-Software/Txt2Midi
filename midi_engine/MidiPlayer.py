@@ -18,7 +18,7 @@ class MidiPlayer:
                 pygame.mixer.music.play()
             cls.paused = False
         except pygame.error:
-            pass  # Ignora o clique caso nenhum arquivo tenha sido carregado
+            pass
 
     @classmethod
     def pause_audio(cls):
@@ -41,6 +41,7 @@ class MidiPlayer:
     def stop_audio(cls):
         try:
             pygame.mixer.music.stop()
+            pygame.mixer.music.unload()
             cls.paused = False
         except pygame.error:
             pass
