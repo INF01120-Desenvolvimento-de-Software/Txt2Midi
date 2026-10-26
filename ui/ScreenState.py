@@ -164,7 +164,7 @@ class EditScreen(ScreenState):
                 Layout.SLIDER_X,
                 y,
                 Layout.SLIDER_WIDTH,
-                control["label"],
+                control["text"],
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 control["minimum"],
                 control["maximum"],
