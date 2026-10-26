@@ -1,4 +1,5 @@
 import unittest
+from midi_engine.Exceptions import InvalidDelayError
 from mido import tempo2bpm, bpm2tempo
 from midi_engine.Rule import Rules
 from midi_engine.MidiConstants import (
@@ -99,12 +100,10 @@ class TestRules(unittest.TestCase):
         expected_note = NOTE_A + (self.settings.base_octave - 4) * SEMITONES_PER_OCTAVE
         self.assertEqual(note_msg.note, expected_note)
 
-    def test_invalid_delay_format_ignored(self):
-        # Teste de ignorar formato de atraso inválido
-        midi = self.parser.parse_text("[texto] A")
-        track = midi.tracks[1]
-        note_msgs = [m for m in track if m.type == "note_on" and m.velocity > 0]
-        self.assertEqual(len(note_msgs), 1)
+    def test_invalid_delay_format_raises_error(self):
+        # Teste para verificar se um formato de atraso inválido levanta a exceção correta
+        with self.assertRaises(InvalidDelayError):
+            self.parser.parse_text("[texto] A")
 
     def test_instrument_change_rules(self):
         # Teste dinâmico de mudança de instrumentos por caracteres e dígitos
