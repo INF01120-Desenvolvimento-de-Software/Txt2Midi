@@ -1,13 +1,18 @@
 import pygame
 
+from midi_engine.Exceptions import MidiLoadError
+
 
 class MidiPlayer:
     paused = False
 
     @classmethod
     def load_midi(cls, file_path):
-        pygame.mixer.music.load(file_path)
-        cls.paused = False
+        try:
+            pygame.mixer.music.load(file_path)
+            cls.paused = False
+        except pygame.error as error:
+            raise MidiLoadError(file_path) from error
 
     @classmethod
     def play_audio(cls):

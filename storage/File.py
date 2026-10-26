@@ -1,6 +1,12 @@
 import os
 
-# Remova a importação do midiutil
+from .Exceptions import (
+    FileReadError,
+    FileWriteError,
+    InvalidExtensionError,
+    MissingFileError,
+    PathNotDefinedError,
+)
 
 
 class File:
@@ -19,9 +25,7 @@ class File:
             if self.allowed_extension and not new_path.lower().endswith(
                 self.allowed_extension
             ):
-                raise ValueError(
-                    f"Invalid extension. Expected: '{self.allowed_extension}'"
-                )
+                raise InvalidExtensionError(self.allowed_extension)
         self._path = new_path
 
 
@@ -40,16 +44,29 @@ class TxtFile(File):
 
     def read_file(self) -> str:
         if not self.path:
-            raise ValueError("Path is not defined.")
+            raise PathNotDefinedError()
 
         try:
             with open(self.path, "r", encoding="utf-8") as file:
                 return file.read()
-        except FileNotFoundError:
-            raise FileNotFoundError(f"The file at '{self.path}' was not found.")
+        except FileNotFoundError as error:
+            raise MissingFileError(self.path) from error
+        except (OSError, UnicodeDecodeError) as error:
+            raise FileReadError(self.path) from error
 
     def write_file(self) -> None:
         if not self.path:
-            raise ValueError("Path is not defined.")
-        with open(self.path, "w", encoding="utf-8") as file:
-            file.write(self.text)
+            raise PathNotDefinedError()
+
+        try:
+            with open(self.path, "w", encoding="utf-8") as file:
+                file.write(self.text)
+        except (OSError, UnicodeEncodeError) as error:
+            raise FileWriteError(self.path) from error
+
+
+class MidiFile(File):
+    allowed_extension = ".mid"
+
+    def __init__(self, path):
+        super().__init__(path)

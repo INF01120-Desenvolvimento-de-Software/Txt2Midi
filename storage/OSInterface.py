@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from tkinter import filedialog
 from typing import Optional
 
+from .Exceptions import StorageError
 from .File import TxtFile
 
 
@@ -29,7 +30,7 @@ class OSInterface:
             return None
         try:
             return TxtFile.load(path).text
-        except Exception as e:
+        except StorageError as e:
             print(f"Erro ao carregar o arquivo: {e}")
             return None
 
@@ -46,7 +47,7 @@ class OSInterface:
         try:
             TxtFile(path, text).write_file()
             return True
-        except Exception as e:
+        except StorageError as e:
             print(f"Erro ao salvar o arquivo: {e}")
             return False
 
