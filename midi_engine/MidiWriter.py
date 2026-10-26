@@ -1,19 +1,15 @@
-from mido import MidiFile, MidiTrack, Message
+from mido import MidiFile
 from midi_engine.Exceptions import MidiSaveError
-from midi_engine.Rule import NoteRule, InstrumentRule
 from midi_engine.MidiConstants import MIDI_EXTENSION
-
-
-class MidiState:
-    def __init__(self):
-        self.track = MidiTrack()
+from midi_engine.MidiSettings import MidiSettings
+from midi_engine.Rule import Rules
 
 
 class MidiWriter:
 
     def __init__(self, settings: MidiSettings = None):
         self.parser = Rules(settings or MidiSettings())
-        self.midi = None
+        self.midi: MidiFile = None
 
     def process_text(self, text: str):
         self.midi = self.parser.parse_text(text)
