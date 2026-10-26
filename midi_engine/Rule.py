@@ -1,4 +1,5 @@
 from mido import MidiFile, MidiTrack, Message, MetaMessage, bpm2tempo
+from midi_engine.Exceptions import InvalidDelayError
 from midi_engine.MidiSettings import MidiSettings
 from midi_engine.MidiConstants import (
     NOTE_A,
@@ -177,18 +178,24 @@ class Rules:
                     end_bracket = line.find("]", i)
 
                     if end_bracket != -1:
+                        delay_text = line[i + 1 : end_bracket]
+
                         try:
-                            delay_beats = int(line[i + 1 : end_bracket])
-                            track.append(
-                                Message(
-                                    "note_on",
-                                    note=NOTE_C,
-                                    velocity=0,
-                                    time=delay_beats * midi.ticks_per_beat,
-                                )
+                            delay_beats = int(delay_text)
+                        except ValueError as error:
+                            raise InvalidDelayError(delay_text) from error
+
+                        if delay_beats < 0:
+                            raise InvalidDelayError(delay_text)
+
+                        track.append(
+                            Message(
+                                "note_on",
+                                note=NOTE_C,
+                                velocity=0,
+                                time=delay_beats * midi.ticks_per_beat,
                             )
-                        except ValueError:
-                            pass
+                        )
 
                         i = end_bracket + 1
                         continue

@@ -1,13 +1,32 @@
 from abc import ABC, abstractmethod
 import pygame
 
-from midi_engine.Exceptions import MidiLoadError, MidiSaveError
+from midi_engine.Exceptions import (
+    InvalidDelayError,
+    MidiError,
+    MidiLoadError,
+    MidiSaveError,
+)
 from midi_engine.MidiPlayer import MidiPlayer
 from midi_engine.MidiWriter import MidiWriter
 from midi_engine.MidiConstants import DEFAULT_OUTPUT_FILENAME
 from . import Layout, Theme
 from .UiElements import Button, GradientBackground, Slider, Text, TextBoxUI
 from storage.OSInterface import OSInterface
+
+MIDI_ERROR_MESSAGES = {
+    MidiSaveError: "Erro ao salvar!",
+    MidiLoadError: "Erro ao carregar!",
+    InvalidDelayError: "Atraso inválido!",
+}
+GENERIC_MIDI_ERROR_MESSAGE = "Erro na geração!"
+
+
+def message_for_midi_error(error: MidiError) -> str:
+    for error_type, message in MIDI_ERROR_MESSAGES.items():
+        if isinstance(error, error_type):
+            return message
+    return GENERIC_MIDI_ERROR_MESSAGE
 
 
 class ScreenState(ABC):
@@ -241,40 +260,36 @@ class PlayScreen(ScreenState):
             ),
         }
 
+    def _show_status(self, message, color):
+        self.elements["status_text"].text = message
+        self.elements["status_text"].color = color
+
     def generate_midi_action(self):
         text_to_convert = self.manager.shared_text
         if not text_to_convert.strip():
-            self.elements["status_text"].text = "Texto vazio!"
-            self.elements["status_text"].color = Theme.RED
+            self._show_status("Texto vazio!", Theme.RED)
             return
 
         try:
             self.writer = MidiWriter(self.manager.build_midi_settings())
             self.writer.process_text(text_to_convert)
             self.writer.save_midi(DEFAULT_OUTPUT_FILENAME)
-            self.elements["status_text"].text = "Arquivo Gerado!"
-            self.elements["status_text"].color = Theme.GREEN
             MidiPlayer.load_midi(DEFAULT_OUTPUT_FILENAME)
-        except MidiSaveError:
-            self.elements["status_text"].text = "Erro ao salvar!"
-            self.elements["status_text"].color = Theme.RED
-        except MidiLoadError:
-            self.elements["status_text"].text = "Erro ao carregar!"
-            self.elements["status_text"].color = Theme.RED
+        except MidiError as error:
+            self._show_status(message_for_midi_error(error), Theme.RED)
+            return
+
+        self._show_status("Arquivo Gerado!", Theme.GREEN)
 
     def export_midi_action(self):
         if not self.writer or not self.writer.midi:
-            self.elements["status_text"].text = "Nenhum MIDI gerado!"
-            self.elements["status_text"].color = Theme.RED
+            self._show_status("Nenhum MIDI gerado!", Theme.RED)
             return
 
-        success = OSInterface.save_midi_content(self.writer.midi)
-        if success:
-            self.elements["status_text"].text = "MIDI exportado!"
-            self.elements["status_text"].color = Theme.GREEN
+        if OSInterface.save_midi_content(self.writer.midi):
+            self._show_status("MIDI exportado!", Theme.GREEN)
         else:
-            self.elements["status_text"].text = "Exportação cancelada"
-            self.elements["status_text"].color = Theme.TEXT_SECONDARY
+            self._show_status("Exportação cancelada", Theme.TEXT_SECONDARY)
 
     def enter(self):
         super().enter()
@@ -287,4 +302,3 @@ class PlayScreen(ScreenState):
 
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
-        
