@@ -58,7 +58,7 @@ class Rules:
 
     def __init__(self, settings: MidiSettings = None):
 
-        self.settings = settings or MidiSettings()
+        self.settings = settings if settings is not None else MidiSettings()
 
         # Dicionário do mapeamento das notas e acidentes:
 

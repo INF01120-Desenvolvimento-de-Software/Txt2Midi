@@ -48,7 +48,6 @@ class ScreenState(ABC):
             if hasattr(item, "handle_event"):
                 item.handle_event(event)
 
-    @abstractmethod
     def draw(self, surface):
         self.background.draw(surface)
         for item in self.elements.values():
@@ -265,6 +264,9 @@ class PlayScreen(ScreenState):
         self.elements["status_text"].color = color
 
     def generate_midi_action(self):
+        self.writer = (
+            None  # Garantindo que o MIDI anterior seja apagado antes de gerar o novo
+        )
         text_to_convert = self.manager.shared_text
         if not text_to_convert.strip():
             self._show_status("Texto vazio!", Theme.RED)

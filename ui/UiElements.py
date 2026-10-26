@@ -113,9 +113,9 @@ class Button(UIElements):
 
 class Slider(UIElements):
 
-    def __init__(self, x, y, width, label, size, minimum, maximum, value, on_change):
+    def __init__(self, x, y, width, text, size, minimum, maximum, value, on_change):
         super().__init__(x, y, size)
-        self.label = label
+        self.text = text
         self.minimum = minimum
         self.maximum = maximum
         self.value = value
@@ -124,7 +124,7 @@ class Slider(UIElements):
         self.dragging = False
 
         self.track_rect = pygame.Rect(
-            x, y + Theme.SLIDER_LABEL_SPACE, width, Theme.SLIDER_TRACK_HEIGHT
+            x, y + Theme.SLIDER_TEXT_SPACE, width, Theme.SLIDER_TRACK_HEIGHT
         )
         margin = Theme.SLIDER_KNOB_RADIUS * 2
         self.hit_rect = self.track_rect.inflate(margin, margin)
@@ -182,10 +182,10 @@ class Slider(UIElements):
         )
 
         # rótulo com o valor atual
-        label_surf = self.font.render(
-            f"{self.label}: {self.value}", True, Theme.TEXT_PRIMARY
+        text_surf = self.font.render(
+            f"{self.text}: {self.value}", True, Theme.TEXT_PRIMARY
         )
-        surface.blit(label_surf, (self.x, self.y))
+        surface.blit(text_surf, (self.x, self.y))
 
         # limites nas extremidades
         below_y = center_y + Theme.SLIDER_KNOB_RADIUS + 4

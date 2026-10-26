@@ -11,7 +11,7 @@ class ScreenManager:
         self.midi_settings = MidiSettings()
         self.setting_controls = [
             {
-                "label": "BPM",
+                "text": "BPM",
                 "minimum": self.midi_settings.min_bpm,
                 "maximum": self.midi_settings.max_bpm,
                 "value": self.midi_settings.initial_bpm,
