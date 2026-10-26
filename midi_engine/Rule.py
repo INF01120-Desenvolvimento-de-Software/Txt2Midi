@@ -1,5 +1,7 @@
 from mido import MidiFile, MidiTrack, Message, MetaMessage, bpm2tempo
-from ui.MidiConstants import (
+from midi_engine.Exceptions import InvalidDelayError
+from midi_engine.MidiSettings import MidiSettings
+from midi_engine.MidiConstants import (
     NOTE_A,
     NOTE_B,
     NOTE_C,
@@ -32,9 +34,7 @@ from ui.MidiConstants import (
     XYLOPHONE,
     KALIMBA,
     SEASHORE,
-    HARPSICHORD,
-    BASSOON,
-    PIANO0,
+    STRINGS,
     DURATION_EIGHTH,
     DURATION_HALF,
     DURATION_QUARTER,
@@ -42,32 +42,23 @@ from ui.MidiConstants import (
     DURATION_SIXTY_FOURTH,
     DURATION_THIRTY_SECOND,
     DURATION_WHOLE,
-    VOLUME_VOICE0,
-    VOLUME_VOICE1,
-    VOLUME_VOICE2,
-    VOLUME_VOICE3,
-    DEFAULT_BPM,
-    MIN_BPM,
-    MAX_BPM,
-    BPM_STEP,
     SEMITONES_PER_OCTAVE,
     MAX_MIDI_NOTE,
     MAX_OCTAVE_OFFSET,
-    BASE_OCTAVE,
-    DEFAULT_DURATION,
-    TOTAL_VOICES,
 )
+
+TEMPO_UP = ">"
+TEMPO_DOWN = "<"
+TEMPO_MARKERS = (TEMPO_UP, TEMPO_DOWN)
 
 
 class Rules:
 
     # Classe responsável pelas regras da escrita do arquivo midi
 
-    def __init__(self):
+    def __init__(self, settings: MidiSettings = None):
 
-        self.midi = MidiFile()
-        self.track = MidiTrack()
-        self.midi.tracks.append(self.track)
+        self.settings = settings or MidiSettings()
 
         # Dicionário do mapeamento das notas e acidentes:
 
@@ -82,14 +73,14 @@ class Rules:
             "Ab": NOTE_A - 1,
             "A#": NOTE_A + 1,
             "Bb": NOTE_A + 1,
-            "B#": NOTE_C,
-            "Cb": NOTE_B - 12,
+            "B#": NOTE_C + SEMITONES_PER_OCTAVE,
+            "Cb": NOTE_B - SEMITONES_PER_OCTAVE,
             "C#": NOTE_C + 1,
             "Db": NOTE_C + 1,
             "D#": NOTE_D + 1,
             "Eb": NOTE_D + 1,
-            "E#": NOTE_E + 1,
-            "Fb": NOTE_E - 1,
+            "E#": NOTE_F,
+            "Fb": NOTE_E,
             "F#": NOTE_F + 1,
             "Gb": NOTE_F + 1,
             "G#": NOTE_G + 1,
@@ -131,6 +122,7 @@ class Rules:
             '"': MARIMBA,
             "`": XYLOPHONE,
             ":": KALIMBA,
+            "]": STRINGS,
         }
 
         # Dicionário das durações das notas:
@@ -144,6 +136,9 @@ class Rules:
             "6": DURATION_THIRTY_SECOND,
             "7": DURATION_SIXTY_FOURTH,
         }
+
+    def _channel_for_voice(self, voice_number: int) -> int:
+        return voice_number % self.settings.voice_count
 
     def parse_text(self, text: str) -> MidiFile:
 
@@ -159,30 +154,25 @@ class Rules:
             track = MidiTrack()
             midi.tracks.append(track)
 
-            # Definições iniciais:
+            # Cada voz toca em seu próprio canal, senão os program_change se sobrescrevem
+            channel = self._channel_for_voice(voice_number)
 
-            default_volume = [
-                VOLUME_VOICE0,
-                VOLUME_VOICE1,
-                VOLUME_VOICE2,
-                VOLUME_VOICE3,
-            ]
-
-            initial_velocity = default_volume[voice_number % TOTAL_VOICES]
+            initial_velocity = self.settings.volume_for_voice(voice_number)
             valid_note = False
 
-            default_instruments = [HARPSICHORD, PIPE_ORGAN, PIANO0, BASSOON]
+            current_instrument = self.settings.instrument_for_voice(voice_number)
+            track.append(
+                Message(
+                    "program_change",
+                    program=current_instrument,
+                    time=0,
+                    channel=channel,
+                )
+            )
 
-            current_instrument = default_instruments[voice_number % TOTAL_VOICES]
+            duration_note = self.settings.default_duration
 
-            track.append(Message("program_change", program=current_instrument, time=0))
-
-            duration_note = DEFAULT_DURATION
-
-            current_bpm = DEFAULT_BPM
-            track.append(MetaMessage("set_tempo", tempo=bpm2tempo(current_bpm), time=0))
-
-            base_octave = BASE_OCTAVE - (voice_number % TOTAL_VOICES)
+            base_octave = self.settings.octave_for_voice(voice_number)
             octave_offset = 0
             last_note = NOTE_C
 
@@ -197,18 +187,25 @@ class Rules:
                     end_bracket = line.find("]", i)
 
                     if end_bracket != -1:
+                        delay_text = line[i + 1 : end_bracket]
+
                         try:
-                            delay_beats = int(line[i + 1 : end_bracket])
-                            track.append(
-                                Message(
-                                    "note_on",
-                                    note=NOTE_C,
-                                    velocity=0,
-                                    time=delay_beats * DEFAULT_DURATION,
-                                )
+                            delay_beats = int(delay_text)
+                        except ValueError as error:
+                            raise InvalidDelayError(delay_text) from error
+
+                        if delay_beats < 0:
+                            raise InvalidDelayError(delay_text)
+
+                        track.append(
+                            Message(
+                                "note_on",
+                                note=NOTE_C,
+                                velocity=0,
+                                time=delay_beats * midi.ticks_per_beat,
+                                channel=channel,
                             )
-                        except ValueError:
-                            pass
+                        )
 
                         i = end_bracket + 1
                         continue
@@ -240,23 +237,17 @@ class Rules:
                     valid_note = False
                     i = i + 1
 
-                # Acelerar o BPM:
+                # Acelerar o BPM (global):
 
                 elif caractere == ">":
-                    current_bpm = min(MAX_BPM, current_bpm + BPM_STEP)
-                    track.append(
-                        MetaMessage("set_tempo", tempo=bpm2tempo(current_bpm), time=0)
-                    )
+                    track.append(MetaMessage("marker", text=TEMPO_UP, time=0))
                     valid_note = False
                     i = i + 1
 
-                # Diminuir o BPM:
+                # Diminuir o BPM (global):
 
                 elif caractere == "<":
-                    current_bpm = max(MIN_BPM, current_bpm - BPM_STEP)
-                    track.append(
-                        MetaMessage("set_tempo", tempo=bpm2tempo(current_bpm), time=0)
-                    )
+                    track.append(MetaMessage("marker", text=TEMPO_DOWN, time=0))
                     valid_note = False
                     i = i + 1
 
@@ -272,7 +263,12 @@ class Rules:
 
                     valid_note = False
                     track.append(
-                        Message("program_change", program=current_instrument, time=0)
+                        Message(
+                            "program_change",
+                            program=current_instrument,
+                            time=0,
+                            channel=channel,
+                        )
                     )
                     i = i + 1
 
@@ -283,9 +279,13 @@ class Rules:
                     note_key = caractere
                     consumed = 1
 
-                    # Verificar os acidentes musicais:
+                    # Verificar os acidentes musicais (só depois de nota maiúscula):
 
-                    if i + 1 < len(line) and line[i + 1] in ("#", "b"):
+                    if (
+                        caractere.isupper()
+                        and i + 1 < len(line)
+                        and line[i + 1] in ("#", "b")
+                    ):
                         note_key = note_key + line[i + 1]
                         consumed = 2
 
@@ -300,14 +300,17 @@ class Rules:
 
                     musical_note = self.notes[note_key]
 
-                    # Tratamento das pausas:
+                    # Tratamento das pausas (pausa não conta como nota anterior):
 
                     if musical_note is None:
-                        valid_note = True
-                        last_note = NOTE_C
+                        valid_note = False
                         track.append(
                             Message(
-                                "note_on", note=NOTE_C, velocity=0, time=duration_note
+                                "note_on",
+                                note=NOTE_C,
+                                velocity=0,
+                                time=duration_note,
+                                channel=channel,
                             )
                         )
                         i = i + consumed
@@ -321,8 +324,7 @@ class Rules:
                         + (base_octave - 4) * SEMITONES_PER_OCTAVE
                     )
 
-                    if final_note > MAX_MIDI_NOTE:
-                        final_note = MAX_MIDI_NOTE
+                    final_note = max(0, min(MAX_MIDI_NOTE, final_note))
 
                     valid_note = True
                     last_note = final_note
@@ -333,6 +335,7 @@ class Rules:
                             note=final_note,
                             velocity=initial_velocity,
                             time=0,
+                            channel=channel,
                         )
                     )
                     track.append(
@@ -341,6 +344,7 @@ class Rules:
                             note=final_note,
                             velocity=initial_velocity,
                             time=duration_note,
+                            channel=channel,
                         )
                     )
 
@@ -354,7 +358,14 @@ class Rules:
 
                     valid_note = False
 
-                    track.append(Message("program_change", program=instrument, time=0))
+                    track.append(
+                        Message(
+                            "program_change",
+                            program=instrument,
+                            time=0,
+                            channel=channel,
+                        )
+                    )
                     i = i + 1
 
                 else:
@@ -365,6 +376,7 @@ class Rules:
                                 note=last_note,
                                 velocity=initial_velocity,
                                 time=0,
+                                channel=channel,
                             )
                         )
                         track.append(
@@ -373,14 +385,64 @@ class Rules:
                                 note=last_note,
                                 velocity=initial_velocity,
                                 time=duration_note,
+                                channel=channel,
                             )
                         )
                     else:
                         track.append(
                             Message(
-                                "note_on", note=NOTE_C, velocity=0, time=duration_note
+                                "note_on",
+                                note=NOTE_C,
+                                velocity=0,
+                                time=duration_note,
+                                channel=channel,
                             )
                         )
                     i = i + 1
 
+        self._build_tempo_track(midi)
+
         return midi
+
+    def _build_tempo_track(self, midi: MidiFile):
+        changes = []
+
+        for track in midi.tracks:
+            tick = 0
+            for msg in track:
+                tick += msg.time
+                if msg.type == "marker" and msg.text in TEMPO_MARKERS:
+                    changes.append((tick, msg.text))
+
+        changes.sort(key=lambda change: change[0])
+
+        current_bpm = self.settings.initial_bpm
+        tempo_track = MidiTrack()
+        tempo_track.append(
+            MetaMessage("set_tempo", tempo=bpm2tempo(current_bpm), time=0)
+        )
+
+        previous_tick = 0
+        for tick, direction in changes:
+            if direction == TEMPO_UP:
+                current_bpm = self.settings.faster_bpm(current_bpm)
+            else:
+                current_bpm = self.settings.slower_bpm(current_bpm)
+
+            tempo_track.append(
+                MetaMessage(
+                    "set_tempo",
+                    tempo=bpm2tempo(current_bpm),
+                    time=tick - previous_tick,
+                )
+            )
+            previous_tick = tick
+
+        for track in midi.tracks:
+            track[:] = [
+                msg
+                for msg in track
+                if not (msg.type == "marker" and msg.text in TEMPO_MARKERS)
+            ]
+
+        midi.tracks.insert(0, tempo_track)

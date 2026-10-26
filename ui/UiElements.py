@@ -1,11 +1,10 @@
 import pygame
 from abc import ABC, abstractmethod
-
 from . import Theme
+from .TextEditor import TextEditor
 
 TEXTBOX_GAP = 10
 GAPS_PER_AXIS = 2
-NOT_FOUND = -1
 
 
 class UIElements(ABC):
@@ -112,28 +111,119 @@ class Button(UIElements):
         surface.blit(text_surf, text_rect)
 
 
+class Slider(UIElements):
+
+    def __init__(self, x, y, width, label, size, minimum, maximum, value, on_change):
+        super().__init__(x, y, size)
+        self.label = label
+        self.minimum = minimum
+        self.maximum = maximum
+        self.value = value
+        self.default = value
+        self.on_change = on_change
+        self.dragging = False
+
+        self.track_rect = pygame.Rect(
+            x, y + Theme.SLIDER_LABEL_SPACE, width, Theme.SLIDER_TRACK_HEIGHT
+        )
+        margin = Theme.SLIDER_KNOB_RADIUS * 2
+        self.hit_rect = self.track_rect.inflate(margin, margin)
+
+    def set_value(self, new_value):
+        new_value = max(self.minimum, min(self.maximum, round(new_value)))
+        if new_value != self.value:
+            self.value = new_value
+            self.on_change(new_value)
+
+    def reset(self):
+        self.set_value(self.default)
+
+    def handle_event(self, event):
+        if not self.visible:
+            self.dragging = False
+            return
+
+        is_left = getattr(event, "button", None) == pygame.BUTTON_LEFT
+
+        if event.type == pygame.MOUSEBUTTONDOWN and is_left:
+            self.dragging = self.hit_rect.collidepoint(event.pos)
+        elif event.type == pygame.MOUSEBUTTONUP and is_left:
+            self.dragging = False
+
+        if self.dragging and event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION):
+            ratio = (event.pos[0] - self.track_rect.left) / self.track_rect.width
+            self.set_value(self.minimum + ratio * (self.maximum - self.minimum))
+
+    def draw(self, surface):
+        if not self.visible:
+            return
+
+        radius = Theme.SLIDER_TRACK_HEIGHT // 2
+        center_y = self.track_rect.centery
+        ratio = (self.value - self.minimum) / (self.maximum - self.minimum)
+        knob_x = int(self.track_rect.left + ratio * self.track_rect.width)
+
+        # barra de fundo e parte preenchida
+        pygame.draw.rect(
+            surface, Theme.SURFACE_ELEVATED_HOVER, self.track_rect, border_radius=radius
+        )
+        filled = pygame.Rect(
+            self.track_rect.left,
+            self.track_rect.top,
+            knob_x - self.track_rect.left,
+            self.track_rect.height,
+        )
+        pygame.draw.rect(surface, Theme.GREEN, filled, border_radius=radius)
+
+        # bolinha
+        knob_color = Theme.GREEN_HOVER if self.dragging else Theme.WHITE
+        pygame.draw.circle(
+            surface, knob_color, (knob_x, center_y), Theme.SLIDER_KNOB_RADIUS
+        )
+
+        # rótulo com o valor atual
+        label_surf = self.font.render(
+            f"{self.label}: {self.value}", True, Theme.TEXT_PRIMARY
+        )
+        surface.blit(label_surf, (self.x, self.y))
+
+        # limites nas extremidades
+        below_y = center_y + Theme.SLIDER_KNOB_RADIUS + 4
+        min_surf = self.font.render(str(self.minimum), True, Theme.TEXT_SECONDARY)
+        max_surf = self.font.render(str(self.maximum), True, Theme.TEXT_SECONDARY)
+        surface.blit(min_surf, (self.track_rect.left, below_y))
+        surface.blit(
+            max_surf, max_surf.get_rect(topright=(self.track_rect.right, below_y))
+        )
+
+
 class TextBoxUI(UIElements):
     def __init__(self, x, y, width, height, size):
         super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)
-        self.text = ""
-        self.lines = []
         self.active = False
-        self.cursor_pos = 0
+
+        max_lines = (height - GAPS_PER_AXIS * TEXTBOX_GAP) // self.font.get_height()
+        self.editor = TextEditor(
+            measure_width=lambda line: self.font.size(line)[0],
+            max_width=width - GAPS_PER_AXIS * TEXTBOX_GAP,
+            max_lines=max_lines,
+        )
+
+        self._key_actions = {
+            pygame.K_LEFT: lambda e: self.editor.move(-1),
+            pygame.K_RIGHT: lambda e: self.editor.move(1),
+            pygame.K_BACKSPACE: lambda e: self.editor.backspace(),
+            pygame.K_RETURN: lambda e: self.editor.newline(),
+            pygame.K_KP_ENTER: lambda e: self.editor.newline(),
+        }
+
+    @property
+    def text(self):
+        return self.editor.text
 
     def set_text(self, imported_text):
-        self.text = ""
-        self.cursor_pos = 0
-
-        for char in imported_text:
-            old_text = self.text
-            old_cursor_pos = self.cursor_pos
-
-            self.text += char
-            self.cursor_pos += 1
-
-            self._apply_word_wrap()
-            self._enforce_height_limit(old_text, old_cursor_pos)
+        self.editor.set_text(imported_text)
 
     def handle_event(self, event):
         if not self.visible:
@@ -142,82 +232,10 @@ class TextBoxUI(UIElements):
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.active = self.rect.collidepoint(event.pos)
         elif event.type == pygame.KEYDOWN and self.active:
-            self._process_key_event(event)
-
-    def _process_key_event(self, event):
-        if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
-            self._handle_navigation(event.key)
-        else:
-            old_text = self.text
-            old_cursor_pos = self.cursor_pos
-
-            self._handle_typing(event)
-            self._apply_word_wrap()
-            self._enforce_height_limit(old_text, old_cursor_pos)
-
-    def _handle_navigation(self, key):
-        if key == pygame.K_LEFT:
-            self.cursor_pos = max(0, self.cursor_pos - 1)
-        elif key == pygame.K_RIGHT:
-            self.cursor_pos = min(len(self.text), self.cursor_pos + 1)
-
-    def _handle_typing(self, event):
-        if event.key == pygame.K_BACKSPACE:
-            if self.cursor_pos > 0:
-                self.text = (
-                    self.text[: self.cursor_pos - 1] + self.text[self.cursor_pos :]
-                )
-                self.cursor_pos -= 1
-        elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-            self.text = (
-                self.text[: self.cursor_pos] + "\n" + self.text[self.cursor_pos :]
+            action = self._key_actions.get(
+                event.key, lambda e: self.editor.insert(e.unicode)
             )
-            self.cursor_pos += 1
-        else:
-            self.text = (
-                self.text[: self.cursor_pos]
-                + event.unicode
-                + self.text[self.cursor_pos :]
-            )
-            self.cursor_pos += len(event.unicode)
-
-    def _apply_word_wrap(self):
-        if not self.text:
-            return
-
-        max_width = self.rect.width - GAPS_PER_AXIS * TEXTBOX_GAP
-        lines = self.text.split("\n")
-        text_up_to_cursor = self.text[: self.cursor_pos]
-        current_line_idx = text_up_to_cursor.count("\n")
-        target_line = lines[current_line_idx]
-
-        if self.font.size(target_line)[0] > max_width:
-            last_space_idx = target_line.rfind(" ")
-
-            if last_space_idx != NOT_FOUND:
-                broken_line = (
-                    target_line[:last_space_idx]
-                    + "\n"
-                    + target_line[last_space_idx + 1 :]
-                )
-            else:
-                broken_line = target_line[:-1] + "\n" + target_line[-1]
-                pos_in_line = len(text_up_to_cursor.split("\n")[-1])
-
-                if pos_in_line == len(target_line):
-                    self.cursor_pos += 1
-
-            lines[current_line_idx] = broken_line
-            self.text = "\n".join(lines)
-
-    def _enforce_height_limit(self, old_text, old_cursor_pos):
-        available_height = self.rect.height - (GAPS_PER_AXIS * TEXTBOX_GAP)
-        max_lines = available_height // self.font.get_height()
-        current_lines = len(self.text.split("\n"))
-
-        if current_lines > max_lines:
-            self.text = old_text
-            self.cursor_pos = old_cursor_pos
+            action(event)
 
     def draw(self, surface):
         if not self.visible:
@@ -245,35 +263,31 @@ class TextBoxUI(UIElements):
         )
 
     def _draw_text(self, surface):
-        current_y = self.rect.y
-        self.lines = self.text.split("\n")
+        line_height = self.font.get_height()
+        text = self.editor.text
 
-        for line in self.lines:
-            if current_y + self.font.get_height() > self.rect.bottom - TEXTBOX_GAP:
+        for row, (start, end) in enumerate(self.editor.rows):
+            top = self.rect.y + TEXTBOX_GAP + row * line_height
+            if top + line_height > self.rect.bottom - TEXTBOX_GAP:
                 break
 
-            text_surf = self.font.render(line, True, Theme.TEXT_PRIMARY)
-            surface.blit(
-                text_surf, (self.rect.x + TEXTBOX_GAP, current_y + TEXTBOX_GAP)
-            )
-            current_y += self.font.get_height()
+            text_surf = self.font.render(text[start:end], True, Theme.TEXT_PRIMARY)
+            surface.blit(text_surf, (self.rect.x + TEXTBOX_GAP, top))
 
     def _draw_cursor(self, surface):
-        text_up_to_cursor = self.text[: self.cursor_pos]
-        lines_before = text_up_to_cursor.split("\n")
-        current_line = lines_before[-1]
-        line_idx = len(lines_before) - 1
+        line_height = self.font.get_height()
+        row, text_before_cursor = self.editor.cursor_location()
 
-        cursor_x = self.rect.x + TEXTBOX_GAP + self.font.size(current_line)[0]
-        cursor_y = self.rect.y + TEXTBOX_GAP + (line_idx * self.font.get_height())
+        cursor_x = self.rect.x + TEXTBOX_GAP + self.font.size(text_before_cursor)[0]
+        cursor_y = self.rect.y + TEXTBOX_GAP + row * line_height
 
-        if cursor_y + self.font.get_height() <= self.rect.bottom - TEXTBOX_GAP:
+        if cursor_y + line_height <= self.rect.bottom - TEXTBOX_GAP:
             blink_phase = pygame.time.get_ticks() % Theme.CURSOR_BLINK_PERIOD_MS
             if blink_phase < Theme.CURSOR_VISIBLE_MS:
                 pygame.draw.line(
                     surface,
                     Theme.TEXT_PRIMARY,
                     (cursor_x, cursor_y),
-                    (cursor_x, cursor_y + self.font.get_height()),
+                    (cursor_x, cursor_y + line_height),
                     Theme.CURSOR_WIDTH,
                 )
