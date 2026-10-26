@@ -60,10 +60,6 @@ class Rules:
 
         self.settings = settings or MidiSettings()
 
-        self.midi = MidiFile()
-        self.track = MidiTrack()
-        self.midi.tracks.append(self.track)
-
         # Dicionário do mapeamento das notas e acidentes:
 
         self.notes = {
@@ -141,6 +137,9 @@ class Rules:
             "7": DURATION_SIXTY_FOURTH,
         }
 
+    def _channel_for_voice(self, voice_number: int) -> int:
+        return voice_number % self.settings.voice_count
+
     def parse_text(self, text: str) -> MidiFile:
 
         # Método que processa o texto de entrada linha por linha, onde cada uma é uma voz diferente
@@ -155,11 +154,21 @@ class Rules:
             track = MidiTrack()
             midi.tracks.append(track)
 
+            # Cada voz toca em seu próprio canal, senão os program_change se sobrescrevem
+            channel = self._channel_for_voice(voice_number)
+
             initial_velocity = self.settings.volume_for_voice(voice_number)
             valid_note = False
 
             current_instrument = self.settings.instrument_for_voice(voice_number)
-            track.append(Message("program_change", program=current_instrument, time=0))
+            track.append(
+                Message(
+                    "program_change",
+                    program=current_instrument,
+                    time=0,
+                    channel=channel,
+                )
+            )
 
             duration_note = self.settings.default_duration
 
@@ -194,6 +203,7 @@ class Rules:
                                 note=NOTE_C,
                                 velocity=0,
                                 time=delay_beats * midi.ticks_per_beat,
+                                channel=channel,
                             )
                         )
 
@@ -253,7 +263,12 @@ class Rules:
 
                     valid_note = False
                     track.append(
-                        Message("program_change", program=current_instrument, time=0)
+                        Message(
+                            "program_change",
+                            program=current_instrument,
+                            time=0,
+                            channel=channel,
+                        )
                     )
                     i = i + 1
 
@@ -291,7 +306,11 @@ class Rules:
                         valid_note = False
                         track.append(
                             Message(
-                                "note_on", note=NOTE_C, velocity=0, time=duration_note
+                                "note_on",
+                                note=NOTE_C,
+                                velocity=0,
+                                time=duration_note,
+                                channel=channel,
                             )
                         )
                         i = i + consumed
@@ -316,6 +335,7 @@ class Rules:
                             note=final_note,
                             velocity=initial_velocity,
                             time=0,
+                            channel=channel,
                         )
                     )
                     track.append(
@@ -324,6 +344,7 @@ class Rules:
                             note=final_note,
                             velocity=initial_velocity,
                             time=duration_note,
+                            channel=channel,
                         )
                     )
 
@@ -337,7 +358,14 @@ class Rules:
 
                     valid_note = False
 
-                    track.append(Message("program_change", program=instrument, time=0))
+                    track.append(
+                        Message(
+                            "program_change",
+                            program=instrument,
+                            time=0,
+                            channel=channel,
+                        )
+                    )
                     i = i + 1
 
                 else:
@@ -348,6 +376,7 @@ class Rules:
                                 note=last_note,
                                 velocity=initial_velocity,
                                 time=0,
+                                channel=channel,
                             )
                         )
                         track.append(
@@ -356,12 +385,17 @@ class Rules:
                                 note=last_note,
                                 velocity=initial_velocity,
                                 time=duration_note,
+                                channel=channel,
                             )
                         )
                     else:
                         track.append(
                             Message(
-                                "note_on", note=NOTE_C, velocity=0, time=duration_note
+                                "note_on",
+                                note=NOTE_C,
+                                velocity=0,
+                                time=duration_note,
+                                channel=channel,
                             )
                         )
                     i = i + 1
