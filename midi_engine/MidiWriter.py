@@ -6,9 +6,8 @@ from midi_engine.Rule import Rules
 
 
 class MidiWriter:
-
     def __init__(self, settings: MidiSettings = None):
-        self.parser = Rules(settings or MidiSettings())
+        self.parser = Rules(settings)
         self.midi: MidiFile = None
 
     def process_text(self, text: str):

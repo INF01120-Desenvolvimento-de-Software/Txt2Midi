@@ -58,7 +58,7 @@ class Rules:
 
     def __init__(self, settings: MidiSettings = None):
 
-        self.settings = settings or MidiSettings()
+        self.settings = settings if settings is not None else MidiSettings()
 
         # Dicionário do mapeamento das notas e acidentes:
 
@@ -146,10 +146,18 @@ class Rules:
 
         midi = MidiFile()
         lines = text.splitlines()
+        voice_count = self.settings.voice_count
+        voice_lines = [""] * min(len(lines), voice_count)
+        line_starts = [set() for _ in voice_lines]
+
+        for line_number, line in enumerate(lines):
+            voice_number = line_number % voice_count
+            line_starts[voice_number].add(len(voice_lines[voice_number]))
+            voice_lines[voice_number] += line
 
         # Interpretador das linhas como vozes:
 
-        for voice_number, line in enumerate(lines):
+        for voice_number, line in enumerate(voice_lines):
 
             track = MidiTrack()
             midi.tracks.append(track)
@@ -183,7 +191,7 @@ class Rules:
             while i < len(line):
                 caractere = line[i]
 
-                if caractere == "[" and i == 0:
+                if caractere == "[" and i in line_starts[voice_number]:
                     end_bracket = line.find("]", i)
 
                     if end_bracket != -1:

@@ -63,10 +63,3 @@ class TxtFile(File):
                 file.write(self.text)
         except (OSError, UnicodeEncodeError) as error:
             raise FileWriteError(self.path) from error
-
-
-class MidiFile(File):
-    allowed_extension = ".mid"
-
-    def __init__(self, path):
-        super().__init__(path)

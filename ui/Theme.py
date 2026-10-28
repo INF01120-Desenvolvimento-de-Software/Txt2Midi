@@ -33,7 +33,7 @@ CURSOR_VISIBLE_MS = 500  # tempo aceso dentro de cada ciclo
 
 SLIDER_TRACK_HEIGHT = 6
 SLIDER_KNOB_RADIUS = 10
-SLIDER_LABEL_SPACE = 30  # espaço entre o rótulo e a barra
+SLIDER_TEXT_SPACE = 30  # espaço entre o rótulo e a barra
 
 
 FONT_NAME = None  # fonte padrão do pygame

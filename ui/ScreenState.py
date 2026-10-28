@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import pygame
 
 from midi_engine.Exceptions import (
@@ -48,7 +48,6 @@ class ScreenState(ABC):
             if hasattr(item, "handle_event"):
                 item.handle_event(event)
 
-    @abstractmethod
     def draw(self, surface):
         self.background.draw(surface)
         for item in self.elements.values():
@@ -94,6 +93,9 @@ class EditScreen(ScreenState):
                 Layout.TEXTBOX_WIDTH,
                 Layout.TEXTBOX_HEIGHT,
                 Theme.FONT_SIZE_TEXTBOX,
+                Layout.TEXTBOX_MARGIN_WIDTH,
+                self.manager.midi_settings.voice_count,
+                "Voz",
             ),
             "btn_home": Button(
                 Layout.FOOTER_LEFT_X,
@@ -120,7 +122,7 @@ class EditScreen(ScreenState):
                 Layout.TOOLBAR_Y,
                 Layout.SMALL_BUTTON_WIDTH,
                 Layout.SMALL_BUTTON_HEIGHT,
-                "Save TXT file",
+                "Salvar TXT",
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 lambda: self.save_txt_action(),
                 style=Theme.SECONDARY_BUTTON,
@@ -130,10 +132,17 @@ class EditScreen(ScreenState):
                 Layout.TOOLBAR_Y,
                 Layout.SMALL_BUTTON_WIDTH,
                 Layout.SMALL_BUTTON_HEIGHT,
-                "Import TXT file",
+                "Importar TXT",
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 lambda: self.import_txt_action(),
                 style=Theme.SECONDARY_BUTTON,
+            ),
+            "status_text": Text(
+                Layout.EDIT_STATUS_TEXT_X,
+                Layout.EDIT_STATUS_TEXT_Y,
+                "",
+                Theme.FONT_SIZE_BUTTON,
+                color=Theme.RED,
             ),
         }
 
@@ -141,6 +150,10 @@ class EditScreen(ScreenState):
 
     def enter(self):
         super().enter()
+
+    def exit(self):
+        super().exit()
+        self.elements["status_text"].text = ""
 
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
@@ -150,8 +163,14 @@ class EditScreen(ScreenState):
 
     def import_txt_action(self):
         content = OSInterface.get_txt_content()
-        if content is not None:
-            self.elements["txt_input"].set_text(content)
+        if content is None:
+            return
+
+        was_cut = self.elements["txt_input"].set_text(content)
+        if was_cut:
+            self.elements["status_text"].text = "Texto Cortado"
+        else:
+            self.elements["status_text"].text = ""
 
     def go_to_play_screen(self):
         self.manager.shared_text = self.elements["txt_input"].text
@@ -165,7 +184,7 @@ class EditScreen(ScreenState):
                 Layout.SLIDER_X,
                 y,
                 Layout.SLIDER_WIDTH,
-                control["label"],
+                control["text"],
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 control["minimum"],
                 control["maximum"],
@@ -265,6 +284,9 @@ class PlayScreen(ScreenState):
         self.elements["status_text"].color = color
 
     def generate_midi_action(self):
+        self.writer = (
+            None  # Garantindo que o MIDI anterior seja apagado antes de gerar o novo
+        )
         text_to_convert = self.manager.shared_text
         if not text_to_convert.strip():
             self._show_status("Texto vazio!", Theme.RED)
