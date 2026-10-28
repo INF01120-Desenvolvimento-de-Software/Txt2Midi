@@ -19,6 +19,13 @@ class TextEditor:
             self._rows_text = self.text
         return self._rows
 
+    def line_start_rows(self):
+        return [
+            index
+            for index, (start, _) in enumerate(self.rows)
+            if start == 0 or self.text[start - 1] == "\n"
+        ]
+
     def cursor_location(self):
         rows = self.rows
         last = len(rows) - 1
@@ -56,11 +63,13 @@ class TextEditor:
         clean = self._printable(clean)
 
         rows = self._layout(clean)
-        if len(rows) > self._max_lines:
+        was_cut = len(rows) > self._max_lines
+        if was_cut:
             clean = clean[: rows[self._max_lines - 1][1]]
 
         self.text = clean
         self.cursor_pos = len(clean)
+        return was_cut
 
     @staticmethod
     def _printable(chars):

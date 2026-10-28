@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import pygame
 
 from midi_engine.Exceptions import (
@@ -93,6 +93,9 @@ class EditScreen(ScreenState):
                 Layout.TEXTBOX_WIDTH,
                 Layout.TEXTBOX_HEIGHT,
                 Theme.FONT_SIZE_TEXTBOX,
+                Layout.TEXTBOX_MARGIN_WIDTH,
+                self.manager.midi_settings.voice_count,
+                "Voz",
             ),
             "btn_home": Button(
                 Layout.FOOTER_LEFT_X,
@@ -134,12 +137,23 @@ class EditScreen(ScreenState):
                 lambda: self.import_txt_action(),
                 style=Theme.SECONDARY_BUTTON,
             ),
+            "status_text": Text(
+                Layout.EDIT_STATUS_TEXT_X,
+                Layout.EDIT_STATUS_TEXT_Y,
+                "",
+                Theme.FONT_SIZE_BUTTON,
+                color=Theme.RED,
+            ),
         }
 
         self._add_setting_sliders()
 
     def enter(self):
         super().enter()
+
+    def exit(self):
+        super().exit()
+        self.elements["status_text"].text = ""
 
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
@@ -149,8 +163,14 @@ class EditScreen(ScreenState):
 
     def import_txt_action(self):
         content = OSInterface.get_txt_content()
-        if content is not None:
-            self.elements["txt_input"].set_text(content)
+        if content is None:
+            return
+
+        was_cut = self.elements["txt_input"].set_text(content)
+        if was_cut:
+            self.elements["status_text"].text = "Texto Cortado"
+        else:
+            self.elements["status_text"].text = ""
 
     def go_to_play_screen(self):
         self.manager.shared_text = self.elements["txt_input"].text

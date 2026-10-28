@@ -5,6 +5,7 @@ from .TextEditor import TextEditor
 
 TEXTBOX_GAP = 10
 GAPS_PER_AXIS = 2
+MARGIN_GAP = 4
 
 
 class UIElements(ABC):
@@ -198,9 +199,19 @@ class Slider(UIElements):
 
 
 class TextBoxUI(UIElements):
-    def __init__(self, x, y, width, height, size):
+    def __init__(
+        self, x, y, width, height, size, margin_width, index_cycle, index_title
+    ):
         super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)
+        self.margin_rect = pygame.Rect(
+            x - margin_width, y, margin_width - MARGIN_GAP, height
+        )
+        self.index_cycle = index_cycle
+        self.index_title = index_title
+        self.index_font = pygame.font.SysFont(
+            Theme.FONT_NAME, Theme.FONT_SIZE_BUTTON_SMALL
+        )
         self.active = False
 
         max_lines = (height - GAPS_PER_AXIS * TEXTBOX_GAP) // self.font.get_height()
@@ -222,8 +233,10 @@ class TextBoxUI(UIElements):
     def text(self):
         return self.editor.text
 
-    def set_text(self, imported_text):
-        self.editor.set_text(imported_text)
+    def set_text(
+        self, imported_text
+    ):  # was_cut booleana indicando que o texto foi cortado
+        return self.editor.set_text(imported_text)
 
     def handle_event(self, event):
         if not self.visible:
@@ -242,6 +255,7 @@ class TextBoxUI(UIElements):
             return
 
         self._draw_background(surface)
+        self._draw_margin(surface)
         self._draw_text(surface)
 
         if self.active:
@@ -261,6 +275,39 @@ class TextBoxUI(UIElements):
             Theme.TEXTBOX_BORDER_WIDTH,
             border_radius=radius,
         )
+
+    def _draw_margin(self, surface):
+        radius = Theme.TEXTBOX_BORDER_RADIUS
+        pygame.draw.rect(
+            surface, Theme.SURFACE_ELEVATED, self.margin_rect, border_radius=radius
+        )
+        pygame.draw.rect(
+            surface,
+            Theme.SURFACE_ELEVATED_HOVER,
+            self.margin_rect,
+            Theme.TEXTBOX_BORDER_WIDTH,
+            border_radius=radius,
+        )
+
+        title_surf = self.index_font.render(self.index_title, True, Theme.TEXT_PRIMARY)
+        title_rect = title_surf.get_rect(
+            midbottom=(self.margin_rect.centerx, self.margin_rect.top - MARGIN_GAP)
+        )
+        surface.blit(title_surf, title_rect)
+
+        line_height = self.font.get_height()
+        for line_number, row in enumerate(self.editor.line_start_rows()):
+            top = self.rect.y + TEXTBOX_GAP + row * line_height
+            if top + line_height > self.rect.bottom - TEXTBOX_GAP:
+                break
+
+            index_surf = self.index_font.render(
+                str(line_number % self.index_cycle), True, Theme.TEXT_SECONDARY
+            )
+            index_rect = index_surf.get_rect(
+                center=(self.margin_rect.centerx, top + line_height // 2)
+            )
+            surface.blit(index_surf, index_rect)
 
     def _draw_text(self, surface):
         line_height = self.font.get_height()
