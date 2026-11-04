@@ -1,3 +1,5 @@
+"""Regras que transformam o texto do usuário em mensagens MIDI."""
+
 from mido import MidiFile, MidiTrack, Message, MetaMessage, bpm2tempo
 from midi_engine.Exceptions import InvalidDelayError
 from midi_engine.MidiSettings import MidiSettings
@@ -53,10 +55,21 @@ TEMPO_MARKERS = (TEMPO_UP, TEMPO_DOWN)
 
 
 class Rules:
+    """Regras da escrita do arquivo MIDI: mapeia caracteres em notas e comandos.
 
-    # Classe responsável pelas regras da escrita do arquivo midi
+    Attributes:
+        settings: Configurações MIDI usadas na conversão.
+        notes: Mapeamento de símbolos de nota (e pausas) para números MIDI.
+        instruments: Mapeamento de símbolos para instrumentos.
+        durations: Mapeamento de dígitos para durações em ticks.
+    """
 
     def __init__(self, settings: MidiSettings = None):
+        """Monta os dicionários de notas, instrumentos e durações.
+
+        Args:
+            settings: Configurações MIDI. Se None, usa as padrão.
+        """
 
         self.settings = settings if settings is not None else MidiSettings()
 
@@ -138,11 +151,29 @@ class Rules:
         }
 
     def _channel_for_voice(self, voice_number: int) -> int:
+        """Retorna o canal MIDI da voz (um canal por voz, em ciclo).
+
+        Args:
+            voice_number: Número da voz (0 em diante).
+        """
         return voice_number % self.settings.voice_count
 
     def parse_text(self, text: str) -> MidiFile:
+        """Converte o texto em um MidiFile, tratando cada linha como uma voz.
 
-        # Método que processa o texto de entrada linha por linha, onde cada uma é uma voz diferente
+        As linhas são distribuídas em ciclo entre as vozes (linha N vai para
+        a voz N % quantidade_de_vozes) e cada voz vira uma trilha. Uma trilha
+        extra de andamento é inserida no início por _build_tempo_track.
+
+        Args:
+            text: Texto escrito segundo as regras do conversor.
+
+        Returns:
+            MidiFile com a trilha de andamento e uma trilha por voz.
+
+        Raises:
+            InvalidDelayError: Se um atraso [n] não for um inteiro não negativo.
+        """
 
         midi = MidiFile()
         lines = text.splitlines()
@@ -413,6 +444,15 @@ class Rules:
         return midi
 
     def _build_tempo_track(self, midi: MidiFile):
+        """Cria a trilha de andamento a partir dos marcadores ">" e "<".
+
+        Reúne os marcadores de todas as trilhas, ordena por tempo, gera um
+        set_tempo para cada mudança, remove os marcadores e insere a trilha
+        de andamento na primeira posição.
+
+        Args:
+            midi: MidiFile alterado no lugar.
+        """
         changes = []
 
         for track in midi.tracks:

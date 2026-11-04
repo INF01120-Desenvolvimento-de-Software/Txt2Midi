@@ -1,5 +1,8 @@
+"""Exceções do midi_engine."""
+
+
 class MidiError(Exception):
-    """Base de todas as exceções do pacote midi_engine."""
+    """Base de todas as exceções do midi_engine."""
 
 
 class MidiSaveError(MidiError):

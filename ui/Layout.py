@@ -1,3 +1,5 @@
+"""Constantes de posição e tamanho dos elementos da interface, em pixels."""
+
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 

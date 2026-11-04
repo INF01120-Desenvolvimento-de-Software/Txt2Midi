@@ -1,3 +1,6 @@
+"""Exceções do storage."""
+
+
 class StorageError(Exception):
     """Base de todas as exceções do pacote storage."""
 

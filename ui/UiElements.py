@@ -1,3 +1,5 @@
+"""Componentes de interface em pygame: texto, botão, slider e caixa de texto."""
+
 import pygame
 from abc import ABC, abstractmethod
 from . import Theme
@@ -9,7 +11,23 @@ MARGIN_GAP = 4
 
 
 class UIElements(ABC):
+    """Base abstrata dos elementos desenháveis, com posição, fonte e visibilidade.
+
+    Attributes:
+        visible: Se False, o elemento não desenha nem reage a eventos.
+        x: Posição horizontal.
+        y: Posição vertical.
+        font: Fonte usada pelo elemento.
+    """
+
     def __init__(self, x, y, size):
+        """Inicializa o elemento (começa invisível).
+
+        Args:
+            x: Posição horizontal.
+            y: Posição vertical.
+            size: Tamanho da fonte.
+        """
         self.visible = False
         self.x = x
         self.y = y
@@ -21,24 +39,46 @@ class UIElements(ABC):
 
 
 class GradientBackground:
+    """Fundo com degradê vertical, guardado em cache enquanto o tamanho não muda."""
+
     def __init__(
         self,
         top_color,
         bottom_color=Theme.BACKGROUND_BASE,
         fade_ratio=Theme.GRADIENT_HEIGHT_RATIO,
     ):
+        """Configura o degradê.
+
+        Args:
+            top_color: Cor RGB no topo.
+            bottom_color: Cor RGB do restante da tela.
+            fade_ratio: Fração da altura em que ocorre a transição.
+        """
         self.top_color = top_color
         self.bottom_color = bottom_color
         self.fade_ratio = fade_ratio
         self._cached_surface = None
 
     def draw(self, surface):
+        """Desenha o fundo, recriando o cache se o tamanho da superfície mudou.
+
+        Args:
+            surface: Superfície pygame onde desenhar.
+        """
         size = surface.get_size()
         if self._cached_surface is None or self._cached_surface.get_size() != size:
             self._cached_surface = self._build(size)
         surface.blit(self._cached_surface, (0, 0))
 
     def _build(self, size):
+        """Constrói a superfície do degradê.
+
+        Args:
+            size: Tupla (largura, altura).
+
+        Returns:
+            Superfície pronta, com o degradê no topo e a cor base abaixo.
+        """
         width, height = size
         gradient = pygame.Surface(size)
         gradient.fill(self.bottom_color)
@@ -56,7 +96,18 @@ class GradientBackground:
 
 
 class Text(UIElements):
+    """Texto de uma linha, centralizado horizontalmente em x."""
+
     def __init__(self, x, y, text, size, color=Theme.TEXT_PRIMARY):
+        """Cria o texto.
+
+        Args:
+            x: Centro horizontal do texto.
+            y: Topo do texto.
+            text: Conteúdo exibido.
+            size: Tamanho da fonte.
+            color: Cor RGB do texto.
+        """
         super().__init__(x, y, size)
         self.text = text
         self.color = color
@@ -71,6 +122,8 @@ class Text(UIElements):
 
 
 class Button(UIElements):
+    """Botão em formato de pílula, com destaque ao passar o mouse."""
+
     def __init__(
         self,
         x,
@@ -82,6 +135,18 @@ class Button(UIElements):
         action_triggered,
         style=Theme.PRIMARY_BUTTON,
     ):
+        """Cria o botão.
+
+        Args:
+            x: Posição horizontal.
+            y: Posição vertical.
+            width: Largura em pixels.
+            height: Altura em pixels.
+            text: Texto do botão.
+            size: Tamanho da fonte.
+            action_triggered: Função chamada, sem argumentos, ao clicar.
+            style: ButtonStyle com as cores do botão.
+        """
         super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
@@ -89,6 +154,11 @@ class Button(UIElements):
         self.style = style
 
     def handle_event(self, event):
+        """Dispara a ação se houve clique esquerdo dentro do botão.
+
+        Args:
+            event: Evento do pygame.
+        """
         if not self.visible:
             return
 
@@ -97,6 +167,11 @@ class Button(UIElements):
                 self.action_triggered()
 
     def draw(self, surface):
+        """Desenha o botão, usando a cor de hover se o mouse estiver sobre ele.
+
+        Args:
+            surface: Superfície pygame onde desenhar.
+        """
         if not self.visible:
             return
 
@@ -113,8 +188,22 @@ class Button(UIElements):
 
 
 class Slider(UIElements):
+    """Controle deslizante horizontal para escolher um valor inteiro."""
 
     def __init__(self, x, y, width, text, size, minimum, maximum, value, on_change):
+        """Cria o slider.
+
+        Args:
+            x: Posição horizontal.
+            y: Posição vertical do rótulo (a barra fica logo abaixo).
+            width: Largura da barra em pixels.
+            text: Rótulo exibido junto do valor.
+            size: Tamanho da fonte.
+            minimum: Menor valor possível.
+            maximum: Maior valor possível.
+            value: Valor inicial, também usado como padrão no reset.
+            on_change: Função chamada com o novo valor quando ele muda.
+        """
         super().__init__(x, y, size)
         self.text = text
         self.minimum = minimum
@@ -131,6 +220,11 @@ class Slider(UIElements):
         self.hit_rect = self.track_rect.inflate(margin, margin)
 
     def set_value(self, new_value):
+        """Define o valor (arredondado e limitado) e avisa se ele mudou.
+
+        Args:
+            new_value: Valor desejado, que será ajustado a [minimum, maximum].
+        """
         new_value = max(self.minimum, min(self.maximum, round(new_value)))
         if new_value != self.value:
             self.value = new_value
@@ -140,6 +234,11 @@ class Slider(UIElements):
         self.set_value(self.default)
 
     def handle_event(self, event):
+        """Trata clique e arrasto do mouse sobre o slider.
+
+        Args:
+            event: Evento do pygame.
+        """
         if not self.visible:
             self.dragging = False
             return
@@ -156,6 +255,11 @@ class Slider(UIElements):
             self.set_value(self.minimum + ratio * (self.maximum - self.minimum))
 
     def draw(self, surface):
+        """Desenha barra, bolinha, rótulo com o valor e os limites.
+
+        Args:
+            surface: Superfície pygame onde desenhar.
+        """
         if not self.visible:
             return
 
@@ -199,9 +303,23 @@ class Slider(UIElements):
 
 
 class TextBoxUI(UIElements):
+    """Caixa de texto multilinha com margem numerada por voz e cursor piscante."""
+
     def __init__(
         self, x, y, width, height, size, margin_width, index_cycle, index_title
     ):
+        """Cria a caixa de texto e o editor interno.
+
+        Args:
+            x: Posição horizontal da caixa.
+            y: Posição vertical da caixa.
+            width: Largura da caixa em pixels.
+            height: Altura da caixa em pixels.
+            size: Tamanho da fonte do texto.
+            margin_width: Largura da margem numerada, à esquerda da caixa.
+            index_cycle: Após quantas linhas a numeração da margem recomeça de 0.
+            index_title: Título exibido acima da margem.
+        """
         super().__init__(x, y, size)
         self.rect = pygame.Rect(x, y, width, height)
         self.margin_rect = pygame.Rect(
@@ -236,9 +354,22 @@ class TextBoxUI(UIElements):
     def set_text(
         self, imported_text
     ):  # was_cut booleana indicando que o texto foi cortado
+        """Substitui o texto da caixa (ex.: ao importar um arquivo).
+
+        Args:
+            imported_text: Novo conteúdo.
+
+        Returns:
+            True se o texto foi cortado por não caber na caixa.
+        """
         return self.editor.set_text(imported_text)
 
     def handle_event(self, event):
+        """Ativa a caixa ao clicar e trata o teclado enquanto ativa.
+
+        Args:
+            event: Evento do pygame.
+        """
         if not self.visible:
             return
 
@@ -251,6 +382,11 @@ class TextBoxUI(UIElements):
             action(event)
 
     def draw(self, surface):
+        """Desenha fundo, margem, texto e (se ativa) o cursor.
+
+        Args:
+            surface: Superfície pygame onde desenhar.
+        """
         if not self.visible:
             return
 
@@ -262,6 +398,7 @@ class TextBoxUI(UIElements):
             self._draw_cursor(surface)
 
     def _draw_background(self, surface):
+        """Desenha o fundo da caixa, com borda branca quando ativa."""
         radius = Theme.TEXTBOX_BORDER_RADIUS
         pygame.draw.rect(
             surface, Theme.SURFACE_ELEVATED, self.rect, border_radius=radius
@@ -277,6 +414,7 @@ class TextBoxUI(UIElements):
         )
 
     def _draw_margin(self, surface):
+        """Desenha a margem com o título e o número da voz de cada linha lógica."""
         radius = Theme.TEXTBOX_BORDER_RADIUS
         pygame.draw.rect(
             surface, Theme.SURFACE_ELEVATED, self.margin_rect, border_radius=radius
@@ -310,6 +448,7 @@ class TextBoxUI(UIElements):
             surface.blit(index_surf, index_rect)
 
     def _draw_text(self, surface):
+        """Desenha cada linha visual do texto que cabe dentro da caixa."""
         line_height = self.font.get_height()
         text = self.editor.text
 
@@ -322,6 +461,7 @@ class TextBoxUI(UIElements):
             surface.blit(text_surf, (self.rect.x + TEXTBOX_GAP, top))
 
     def _draw_cursor(self, surface):
+        """Desenha o cursor piscante na posição atual, se estiver visível na caixa."""
         line_height = self.font.get_height()
         row, text_before_cursor = self.editor.cursor_location()
 

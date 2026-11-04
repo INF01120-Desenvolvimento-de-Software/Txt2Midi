@@ -1,3 +1,5 @@
+"""Constantes visuais do app: cores, medidas de componentes e fontes."""
+
 from typing import NamedTuple, Tuple
 
 Color = Tuple[int, int, int]
@@ -46,6 +48,14 @@ FONT_SIZE_PLAYER = 25
 
 
 class ButtonStyle(NamedTuple):
+    """Conjunto de cores de um botão.
+
+    Attributes:
+        background: Cor de fundo normal.
+        background_hover: Cor de fundo com o mouse em cima.
+        text_color: Cor do texto.
+    """
+
     background: Color
     background_hover: Color
     text_color: Color
