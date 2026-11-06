@@ -1,3 +1,5 @@
+"""Constantes visuais do app: cores, medidas de componentes e fontes."""
+
 from typing import NamedTuple, Tuple
 
 Color = Tuple[int, int, int]
@@ -33,7 +35,7 @@ CURSOR_VISIBLE_MS = 500  # tempo aceso dentro de cada ciclo
 
 SLIDER_TRACK_HEIGHT = 6
 SLIDER_KNOB_RADIUS = 10
-SLIDER_LABEL_SPACE = 30  # espaço entre o rótulo e a barra
+SLIDER_TEXT_SPACE = 30  # espaço entre o rótulo e a barra
 
 
 FONT_NAME = None  # fonte padrão do pygame
@@ -46,6 +48,14 @@ FONT_SIZE_PLAYER = 25
 
 
 class ButtonStyle(NamedTuple):
+    """Conjunto de cores de um botão.
+
+    Attributes:
+        background: Cor de fundo normal.
+        background_hover: Cor de fundo com o mouse em cima.
+        text_color: Cor do texto.
+    """
+
     background: Color
     background_hover: Color
     text_color: Color

@@ -4,10 +4,24 @@ from midi_engine.Exceptions import MidiLoadError
 
 
 class MidiPlayer:
+    """Classe que controla a reprodução do arquivo MIDI.
+
+    Attributes:
+        paused: True se a reprodução está pausada.
+    """
+
     paused = False
 
     @classmethod
     def load_midi(cls, file_path):
+        """Carrega um arquivo MIDI para tocar.
+
+        Args:
+            file_path: Caminho do arquivo .mid.
+
+        Raises:
+            MidiLoadError: Se o pygame não conseguir carregar o arquivo.
+        """
         try:
             pygame.mixer.music.load(file_path)
             cls.paused = False
@@ -16,6 +30,7 @@ class MidiPlayer:
 
     @classmethod
     def play_audio(cls):
+        """Inicia a reprodução, ou a retoma se estiver pausada."""
         try:
             if cls.paused:
                 pygame.mixer.music.unpause()
@@ -27,6 +42,7 @@ class MidiPlayer:
 
     @classmethod
     def pause_audio(cls):
+        """Pausa a reprodução do audio"""
         try:
             pygame.mixer.music.pause()
             cls.paused = True
@@ -35,6 +51,7 @@ class MidiPlayer:
 
     @classmethod
     def reset_audio(cls):
+        """Recomeça a reprodução do audio"""
         try:
             pygame.mixer.music.stop()
             pygame.mixer.music.play()
@@ -44,6 +61,7 @@ class MidiPlayer:
 
     @classmethod
     def stop_audio(cls):
+        """Para a reprodução e descarrega o arquivo."""
         try:
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()

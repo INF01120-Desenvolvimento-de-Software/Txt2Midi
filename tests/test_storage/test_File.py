@@ -2,6 +2,11 @@ import unittest
 from unittest.mock import patch, mock_open
 
 from storage.File import File, TxtFile
+from storage.Exceptions import (
+    InvalidExtensionError,
+    PathNotDefinedError,
+    MissingFileError,
+)
 
 
 class TestFile(unittest.TestCase):
@@ -13,7 +18,7 @@ class TestFile(unittest.TestCase):
 
     def test_file_path_setter_validation(self):
         # Testa a validação de extensão no setter usando a subclasse TxtFile
-        with self.assertRaisesRegex(ValueError, "Invalid extension"):
+        with self.assertRaises(InvalidExtensionError):
             TxtFile("documento.pdf")
 
     def test_file_path_setter_none(self):
@@ -44,16 +49,16 @@ class TestTxtFile(unittest.TestCase):
     def test_txtfile_read_file_no_path(self):
         # Testa a proteção de leitura quando o caminho é nulo
         arquivo = TxtFile(None)
-        with self.assertRaisesRegex(ValueError, "Path is not defined."):
+        with self.assertRaises(PathNotDefinedError):
             arquivo.read_file()
 
     @patch("builtins.open")
     def test_txtfile_read_file_not_found(self, mock_arquivo):
-        # Força um erro de disco para garantir que o método repassa o FileNotFoundError
+        # Força um erro de disco para garantir que o método repassa o MissingFileError
         mock_arquivo.side_effect = FileNotFoundError
         arquivo = TxtFile("inexistente.txt")
 
-        with self.assertRaisesRegex(FileNotFoundError, "was not found"):
+        with self.assertRaises(MissingFileError):
             arquivo.read_file()
 
     @patch("builtins.open", new_callable=mock_open)
@@ -69,7 +74,7 @@ class TestTxtFile(unittest.TestCase):
     def test_txtfile_write_file_no_path(self):
         # Testa a proteção de escrita quando o caminho é nulo
         arquivo = TxtFile(None, "Texto")
-        with self.assertRaisesRegex(ValueError, "Path is not defined."):
+        with self.assertRaises(PathNotDefinedError):
             arquivo.write_file()
 
     @patch.object(TxtFile, "read_file", return_value="Texto do load")

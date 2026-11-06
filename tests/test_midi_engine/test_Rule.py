@@ -1,18 +1,17 @@
 import unittest
+from midi_engine.Exceptions import InvalidDelayError
 from mido import tempo2bpm, bpm2tempo
 from midi_engine.Rule import Rules
 from midi_engine.MidiConstants import (
     NOTE_C,
     NOTE_A,
     MAX_MIDI_NOTE,
-    DEFAULT_DURATION,
     HARPSICHORD,
     PIPE_ORGAN,
     BANDONEON,
     TUBULAR_BELLS,
     AGOGO,
     SEMITONES_PER_OCTAVE,
-    VOLUME_VOICE0,
     DURATION_QUARTER,
     DURATION_SIXTEENTH,
 )
@@ -76,7 +75,7 @@ class TestRules(unittest.TestCase):
         midi = self.parser.parse_text("[4] A")
         track = midi.tracks[1]
         delay_msg = [m for m in track if m.type == "note_on" and m.velocity == 0][0]
-        self.assertEqual(delay_msg.time, 4 * DEFAULT_DURATION)
+        self.assertEqual(delay_msg.time, 4 * self.settings.default_duration)
 
     def test_invalid_character_generates_pause(self):
         # Teste de geração de pausa para caracteres inválidos
@@ -101,12 +100,10 @@ class TestRules(unittest.TestCase):
         expected_note = NOTE_A + (self.settings.base_octave - 4) * SEMITONES_PER_OCTAVE
         self.assertEqual(note_msg.note, expected_note)
 
-    def test_invalid_delay_format_ignored(self):
-        # Teste de ignorar formato de atraso inválido
-        midi = self.parser.parse_text("[texto] A")
-        track = midi.tracks[1]
-        note_msgs = [m for m in track if m.type == "note_on" and m.velocity > 0]
-        self.assertEqual(len(note_msgs), 1)
+    def test_invalid_delay_format_raises_error(self):
+        # Teste para verificar se um formato de atraso inválido levanta a exceção correta
+        with self.assertRaises(InvalidDelayError):
+            self.parser.parse_text("[texto] A")
 
     def test_instrument_change_rules(self):
         # Teste dinâmico de mudança de instrumentos por caracteres e dígitos
@@ -140,7 +137,7 @@ class TestRules(unittest.TestCase):
         midi = self.parser.parse_text(" C")
         track = midi.tracks[1]
         note_msg = [m for m in track if m.type == "note_on" and m.velocity > 0][0]
-        expected_volume = min(MAX_MIDI_NOTE, VOLUME_VOICE0 * 2)
+        expected_volume = min(MAX_MIDI_NOTE, self.settings.volume_for_voice(0) * 2)
         self.assertEqual(note_msg.velocity, expected_volume)
 
     def test_note_repetition_rule(self):
@@ -148,7 +145,7 @@ class TestRules(unittest.TestCase):
         midi = self.parser.parse_text("CO")
         track = midi.tracks[1]
         note_msgs = [m for m in track if m.type == "note_on"]
-        self.assertEqual(note_msgs[0].velocity, VOLUME_VOICE0)
+        self.assertEqual(note_msgs[0].velocity, self.settings.volume_for_voice(0))
         self.assertEqual(note_msgs[1].note, note_msgs[0].note)
         self.assertEqual(note_msgs[1].velocity, note_msgs[0].velocity)
 
@@ -157,7 +154,7 @@ class TestRules(unittest.TestCase):
         midi = self.parser.parse_text("Ca")
         track = midi.tracks[1]
         note_msgs = [m for m in track if m.type == "note_on"]
-        self.assertEqual(note_msgs[0].velocity, VOLUME_VOICE0)
+        self.assertEqual(note_msgs[0].velocity, self.settings.volume_for_voice(0))
         self.assertEqual(note_msgs[1].velocity, 0)
 
 

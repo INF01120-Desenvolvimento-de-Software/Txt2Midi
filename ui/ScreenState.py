@@ -1,4 +1,6 @@
-from abc import ABC, abstractmethod
+"""Telas do app (início, edição e reprodução) e a base comum entre elas."""
+
+from abc import ABC
 import pygame
 
 from midi_engine.Exceptions import (
@@ -23,6 +25,14 @@ GENERIC_MIDI_ERROR_MESSAGE = "Erro na geração!"
 
 
 def message_for_midi_error(error: MidiError) -> str:
+    """Traduz uma exceção do motor MIDI em mensagem curta para a tela.
+
+    Args:
+        error: Exceção capturada.
+
+    Returns:
+        Mensagem do tipo de erro correspondente, ou a mensagem genérica.
+    """
     for error_type, message in MIDI_ERROR_MESSAGES.items():
         if isinstance(error, error_type):
             return message
@@ -30,26 +40,51 @@ def message_for_midi_error(error: MidiError) -> str:
 
 
 class ScreenState(ABC):
+    """Base das telas: guarda os elementos e repassa eventos e desenho a eles.
+
+    Attributes:
+        elements: Elementos da tela, por nome (a ordem define a ordem de desenho).
+        manager: ScreenManager dono da tela.
+        background: Fundo com degradê da tela.
+    """
+
     def __init__(self, manager, gradient_color=Theme.BACKGROUND_BASE):
+        """Inicializa a tela.
+
+        Args:
+            manager: ScreenManager dono da tela.
+            gradient_color: Cor do topo do degradê de fundo.
+        """
         self.elements = {}
         self.manager = manager
         self.background = GradientBackground(gradient_color)
 
     def enter(self):
+        """Chamado ao entrar na tela: torna todos os elementos visíveis."""
         for item in self.elements.values():
             item.visible = True
 
     def exit(self):
+        """Chamado ao sair da tela: esconde todos os elementos."""
         for item in self.elements.values():
             item.visible = False
 
     def handle_event(self, event):
+        """Repassa o evento aos elementos que sabem tratá-lo.
+
+        Args:
+            event: Evento do pygame.
+        """
         for item in self.elements.values():
             if hasattr(item, "handle_event"):
                 item.handle_event(event)
 
-    @abstractmethod
     def draw(self, surface):
+        """Desenha o fundo e depois os elementos, na ordem do dicionário.
+
+        Args:
+            surface: Superfície pygame onde desenhar.
+        """
         self.background.draw(surface)
         for item in self.elements.values():
             if hasattr(item, "draw"):
@@ -58,6 +93,11 @@ class ScreenState(ABC):
 
 class StartScreen(ScreenState):
     def __init__(self, manager):
+        """Monta o título e o botão "Começar".
+
+        Args:
+            manager: ScreenManager dono da tela.
+        """
         super().__init__(manager, Theme.GRADIENT_START)
 
         self.elements = {
@@ -84,7 +124,14 @@ class StartScreen(ScreenState):
 
 
 class EditScreen(ScreenState):
+    """Tela de edição do texto, com importação/salvamento de TXT e sliders."""
+
     def __init__(self, manager):
+        """Monta a caixa de texto, os botões, o status e os sliders.
+
+        Args:
+            manager: ScreenManager dono da tela.
+        """
         super().__init__(manager, Theme.GRADIENT_EDIT)
 
         self.elements = {
@@ -94,6 +141,9 @@ class EditScreen(ScreenState):
                 Layout.TEXTBOX_WIDTH,
                 Layout.TEXTBOX_HEIGHT,
                 Theme.FONT_SIZE_TEXTBOX,
+                Layout.TEXTBOX_MARGIN_WIDTH,
+                self.manager.midi_settings.voice_count,
+                "Voz",
             ),
             "btn_home": Button(
                 Layout.FOOTER_LEFT_X,
@@ -120,7 +170,7 @@ class EditScreen(ScreenState):
                 Layout.TOOLBAR_Y,
                 Layout.SMALL_BUTTON_WIDTH,
                 Layout.SMALL_BUTTON_HEIGHT,
-                "Save TXT file",
+                "Salvar TXT",
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 lambda: self.save_txt_action(),
                 style=Theme.SECONDARY_BUTTON,
@@ -130,10 +180,17 @@ class EditScreen(ScreenState):
                 Layout.TOOLBAR_Y,
                 Layout.SMALL_BUTTON_WIDTH,
                 Layout.SMALL_BUTTON_HEIGHT,
-                "Import TXT file",
+                "Importar TXT",
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 lambda: self.import_txt_action(),
                 style=Theme.SECONDARY_BUTTON,
+            ),
+            "status_text": Text(
+                Layout.EDIT_STATUS_TEXT_X,
+                Layout.EDIT_STATUS_TEXT_Y,
+                "",
+                Theme.FONT_SIZE_BUTTON,
+                color=Theme.RED,
             ),
         }
 
@@ -142,22 +199,37 @@ class EditScreen(ScreenState):
     def enter(self):
         super().enter()
 
+    def exit(self):
+        """Esconde os elementos e limpa a mensagem de status."""
+        super().exit()
+        self.elements["status_text"].text = ""
+
     def draw(self, surface: pygame.Surface):
         super().draw(surface)
 
     def save_txt_action(self):
+        """Abre o diálogo para salvar o texto atual em um arquivo TXT."""
         OSInterface.save_txt_content(self.elements["txt_input"].text)
 
     def import_txt_action(self):
+        """Importa um TXT para a caixa de texto e avisa se ele foi cortado."""
         content = OSInterface.get_txt_content()
-        if content is not None:
-            self.elements["txt_input"].set_text(content)
+        if content is None:
+            return
+
+        was_cut = self.elements["txt_input"].set_text(content)
+        if was_cut:
+            self.elements["status_text"].text = "Texto Cortado"
+        else:
+            self.elements["status_text"].text = ""
 
     def go_to_play_screen(self):
+        """Salva o texto no manager e muda para a tela de reprodução."""
         self.manager.shared_text = self.elements["txt_input"].text
         self.manager.change_state("play")
 
     def _add_setting_sliders(self):
+        """Cria um slider e um botão "Reset" para cada item de setting_controls."""
         for index, control in enumerate(self.manager.setting_controls):
             y = Layout.SLIDER_Y + index * Layout.SLIDER_GAP
 
@@ -165,7 +237,7 @@ class EditScreen(ScreenState):
                 Layout.SLIDER_X,
                 y,
                 Layout.SLIDER_WIDTH,
-                control["label"],
+                control["text"],
                 Theme.FONT_SIZE_BUTTON_SMALL,
                 control["minimum"],
                 control["maximum"],
@@ -187,7 +259,18 @@ class EditScreen(ScreenState):
 
 
 class PlayScreen(ScreenState):
+    """Tela de reprodução: gera o MIDI ao entrar e oferece controles de áudio.
+
+    Attributes:
+        writer: MidiWriter do último MIDI gerado com sucesso (ou None).
+    """
+
     def __init__(self, manager):
+        """Monta os botões de navegação, de player e de exportação.
+
+        Args:
+            manager: ScreenManager dono da tela.
+        """
         super().__init__(manager, Theme.GRADIENT_PLAY)
         self.writer = None
         self.elements = {
@@ -261,10 +344,23 @@ class PlayScreen(ScreenState):
         }
 
     def _show_status(self, message, color):
+        """Exibe uma mensagem na tela.
+
+        Args:
+            message: Texto da mensagem.
+            color: Cor RGB do texto.
+        """
         self.elements["status_text"].text = message
         self.elements["status_text"].color = color
 
     def generate_midi_action(self):
+        """Gera o MIDI a partir do texto compartilhado, salva e carrega no player.
+
+        Mostra o resultado (sucesso, texto vazio ou erro) na mensagem de status.
+        """
+        self.writer = (
+            None  # Garantindo que o MIDI anterior seja apagado antes de gerar o novo
+        )
         text_to_convert = self.manager.shared_text
         if not text_to_convert.strip():
             self._show_status("Texto vazio!", Theme.RED)
@@ -282,6 +378,7 @@ class PlayScreen(ScreenState):
         self._show_status("Arquivo Gerado!", Theme.GREEN)
 
     def export_midi_action(self):
+        """Exporta o MIDI gerado por um diálogo de salvar e mostra o resultado."""
         if not self.writer or not self.writer.midi:
             self._show_status("Nenhum MIDI gerado!", Theme.RED)
             return
@@ -292,10 +389,12 @@ class PlayScreen(ScreenState):
             self._show_status("Exportação cancelada", Theme.TEXT_SECONDARY)
 
     def enter(self):
+        """Mostra os elementos e gera o MIDI automaticamente."""
         super().enter()
         self.generate_midi_action()
 
     def exit(self):
+        """Esconde os elementos, limpa o status e para o áudio."""
         super().exit()
         self.elements["status_text"].text = ""
         MidiPlayer.stop_audio()

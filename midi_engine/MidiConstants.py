@@ -1,3 +1,5 @@
+"""Constantes MIDI: notas base, instrumentos, durações em ticks e limites."""
+
 # CONSTANTES DE NOTAS BASE:
 
 NOTE_A = 69

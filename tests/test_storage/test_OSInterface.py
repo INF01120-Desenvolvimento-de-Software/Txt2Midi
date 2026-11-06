@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from storage.OSInterface import OSInterface
+from storage.Exceptions import StorageError, FileWriteError
 
 
 class TestOSInterface(unittest.TestCase):
@@ -13,10 +14,8 @@ class TestOSInterface(unittest.TestCase):
 
         with OSInterface._hidden_root() as root:
             self.assertEqual(root, mock_root_instance)
-            # Verifica se .withdraw() foi chamado para esconder a janela fantasma
             mock_root_instance.withdraw.assert_called_once()
 
-        # Verifica se, ao sair do bloco 'with', a janela é destruída para libertar memória
         mock_root_instance.destroy.assert_called_once()
 
     @patch("tkinter.filedialog.askopenfilename")
@@ -49,7 +48,7 @@ class TestOSInterface(unittest.TestCase):
     def test_get_txt_content_handles_exception(self, mock_txt_load, mock_askopen):
         # Cenário de falha: Proteção do bloco try/except se o disco falhar
         mock_askopen.return_value = "caminho/corrompido.txt"
-        mock_txt_load.side_effect = Exception("Erro simulado de leitura")
+        mock_txt_load.side_effect = StorageError("Erro simulado de leitura")
 
         resultado = OSInterface.get_txt_content()
 
@@ -88,7 +87,9 @@ class TestOSInterface(unittest.TestCase):
         mock_asksave.return_value = "caminho/bloqueado.txt"
 
         mock_txt_instance = MagicMock()
-        mock_txt_instance.write_file.side_effect = PermissionError("Acesso negado")
+        mock_txt_instance.write_file.side_effect = FileWriteError(
+            "caminho/bloqueado.txt"
+        )
         mock_txt_class.return_value = mock_txt_instance
 
         resultado = OSInterface.save_txt_content("Texto")
