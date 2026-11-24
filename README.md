@@ -91,6 +91,7 @@ python -m unittest discover
 ## Como usar
 
 A aplicação é dividida em 3 telas:
+
 Tela Inicial: Contém apenas o nome do projeto e o botão começar.
 
 Tela de Edição: Tela onde é possível editar a entrada de texto e importar ou exportar arquivo txt, além de ser possível a modificação do valor de BPM através de um slider. Como solicitado nos requisitos, é possível importar um texto e editá-lo através da caixa de texto. A caixa de texto tem um limite de caracteres, textos maiores são cortados e isso é avisado ao usuário.
